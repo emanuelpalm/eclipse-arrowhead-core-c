@@ -1,151 +1,347 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#ifndef AH_ALLOC_H_
-#define AH_ALLOC_H_
+#ifndef AH_ALLOC_H
+#define AH_ALLOC_H
 
 /**
  * @file
- * Dynamic memory allocation.
+ * Heap memory allocators.
  *
- * This file most significantly provides function for allocating and freeing
- * dynamic memory. It provides two allocators, a <em>page allocator</em> and the
- * <em>C99 allocator</em>. The implementations of the allocators can be changed
- * by specifying their replacements as directed in conf.h.
- *
- * <h3>Page Allocator</h3>
- *
- * A @e page is a contiguous chunk of @ref AH_PSIZE bytes, aligned to a memory
- * boundary deemed suitable by the current library platform implementation. The
- * page allocator provides and recycles such pages via the ah_palloc() and
- * ah_pfree() functions.
- *
- * In contrast to the C99 allocator, the page allocator is relatively simple to
- * implement. As every page is of the exact same size, the allocator may return
- * any of them when new memory is requested. An implementation of a page
- * allocator may, for example, use a predefined set of chunks and keep track of
- * which of them are available for allocation via a single linked list.
- *
- * The page allocator is used, when possible, by the Arrowhead Core C libraries.
- *
- * <h3>C99 Allocator</h3>
- *
- * The C99 allocator concretely consists of the @c malloc(), @c calloc(),
- * @c realloc() and @c free() functions. However, implementing these in a manner
- * that is both space-efficient and performant can be difficult, and especially
- * so on embedded platforms. As a consequence, this library, and most other
- * official Arrowhead C libraries, are designed to work even when the
- * implementations of these functions are very limited. More specifically, an
- * acceptable C99 allocator implementation
- * <ol>
- *   <li>returns valid pointers when allocating new memory (if the requested number of bytes of heap
- *       memory are available),
- *   <li>fails every attempt to reallocate memory (i.e. the first argument to @c realloc() is not
- *       @c NULL), and
- *   <li>ignores any attempt to free memory.
- * </ol>
- * All library functionality that relies on being able to continually allocate
- * and release memory must use the page allocator or be able to operate without
- * using the C99 allocator at all.
- *
- * @note Please refer to conf.h for more details on how to configure what C99
- *       allocator function implementations are to be used.
+ * Functions and types for allocating and deallocating heap memory.
  */
 
-#include "conf.h"
+#include "def.h"
+#include "err.h"
 
-/** Size, in bytes, of the memory pages returned by ah_palloc(). */
-#define AH_PSIZE AH_CONF_PSIZE
+#include <ahi/alloc.h>
+#include <ahp/alloc.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /**
- * Allocates and zeroes an array of @a n elements, each being @a size bytes
- * large.
+ * Bump allocator.
  *
- * If @a n multiplied by @a size overflows, this function must allocate no
- * memory and return @c NULL.
- *
- * @param n    Number of elements to allocate.
- * @param size Size, in bytes, of each element.
- * @return A zeroed chunk of memory, or @c NULL if no sufficiently large chunk
- *         can be allocated.
+ * Portions out variably-sized subregions of a fixed memory region owned by the
+ * allocator. These subregions cannot be freed individually. They can, however,
+ * be freed all at once by resetting the allocator.
  */
-#define ah_calloc(n, size) AH_CONF_CALLOC((n), (size))
+struct ah_bump {
+    uint8_t* base; ///< Pointer to beginning of memory region.
+    uint8_t* off;  ///< Pointer to first unused byte in memory region.
+    uint8_t* end;  ///< Pointer to first byte after end of memory region.
+};
 
 /**
- * Releases referenced memory block, potentially making it possible for the
- * allocator to use it again.
+ * Slab allocator.
  *
- * @param ptr Pointer previously acquired from ah_calloc(), ah_malloc() or
- *            ah_realloc().
- *
- * @warning It is an error to provide a pointer returned by ah_palloc(), or any
- *          other allocation function than those listed above, to this function.
+ * Maintains a variable number of memory <em>slots</em> that can be
+ * individually allocated and freed, each of which has the same size in bytes.
+ * These slots are stored in <em>banks</em>, which, in turn, are stored in
+ * memory pages allocated via ah_page_alloc().
  */
-#define ah_free(ptr) AH_CONF_FREE((ptr))
+struct ah_slab {
+    struct ahi_slab_bank* _bank_list;
+    size_t _bank_sz;
+
+    struct ahi_slab_slot* _slot_free_list;
+    size_t _slot_sz;
+    size_t _slots_per_bank;
+
+    size_t _ref_count;
+};
 
 /**
- * Allocates a contiguous chunk of at least @a size bytes of memory.
+ * @name Memory Alignment
  *
- * @param size Size, in bytes, of chunk to allocate.
- * @return An uninitialized chunk of memory, or @c NULL if no sufficiently
- *         large chunk can be allocated.
+ * Functions for aligning pointers and sizes to significant memory boundaries,
+ * all of which must be multiples of the platform pointer size,
+ * @c sizeof(intptr_t).
+ *
+ * @{
  */
-#define ah_malloc(size) AH_CONF_MALLOC((size))
 
 /**
- * Allocates a @e page of memory, guaranteed to be at least @ref AH_PSIZE bytes
- * large.
+ * Rounds up referenced pointer @a ptr to its nearest multiple of @a alignment.
  *
- * The value of @ref AH_PSIZE can be adjusted by modifying @c AH_CONF_PSIZE, more
- * of which you can read in conf.h.
+ * @param[in]     alignment Integer multiple of the platform pointer size.
+ * @param[in,out] ptr       Pointer value to round up to nearest multiple of
+ *                          @a alignment.
  *
- * @return An uninitialized chunk of memory, or @c NULL if no sufficiently
- *         large chunk can be allocated.
+ * @retval AH_OK     if successful.
+ * @retval AH_EDOM   if @a alignment is not a positive power of 2.
+ * @retval AH_EINVAL if @a ptr is @c NULL.
+ * @retval AH_ERANGE if the operation overflowed @a ptr.
+ *
+ * @warning If anything but @c AH_OK is returned, the state of the pointer
+ *          referred to by @a ptr is undefined.
+ *
+ * @warning This operation may increase the address of the pointer referred to
+ *          by @a ptr with up to @c alignment-1. It is your responsibility to
+ *          ensure this address is valid.
  */
-#define ah_palloc() AH_CONF_PALLOC()
+ah_inline ah_err_t ah_align_ptr(uintptr_t alignment, uintptr_t* ptr)
+{
+    return ahi_align_ptr(alignment, ptr);
+}
 
 /**
- * Releases referenced memory page, making it possible for the page allocator to
- * use it again.
+ * Rounds up referenced size @a sz its nearest multiple of @a alignment.
  *
- * @param page Pointer previously acquired from ah_palloc().
+ * @param[in]     alignment Integer multiple of the platform pointer size.
+ * @param[in,out] sz        Size to round up nearest multiple of @a alignment.
  *
- * @warning It is an error to provide a pointer returned by ah_calloc(),
- *          ah_malloc() or any other allocation function than ah_palloc(), to
- *          this function.
+ * @retval AH_OK     if successful.
+ * @retval AH_EDOM   if @a alignment is not a positive power of 2.
+ * @retval AH_EINVAL if @a sz is @c NULL.
+ * @retval AH_ERANGE if the operation overflowed @a sz.
+ *
+* @warning If anything but @c AH_OK is returned, the state of the size referred
+*          to by @a sz is undefined.
  */
-#define ah_pfree(page) AH_CONF_PFREE((page))
+ah_inline ah_err_t ah_align_sz(uintptr_t alignment, size_t* sz)
+{
+    return ahi_align_sz(alignment, sz);
+}
+
+/** @} */
 
 /**
- * Reallocates memory chunk associated with @a ptr.
+ * @name Bump Allocation
  *
- * Conceptually, this function allocates a new memory chunk of @a size bytes,
- * copies over the contents of the @a ptr buffer (or as much of it as fits in
- * the new chunk), and then frees the memory associated with @a ptr. If @a size
- * is larger than the previous size of the @a ptr chunk, the additional memory
- * is uninitialized. Practically, this function may expand or contract the
- * @a ptr chunk in place, or do something else with the same observable result.
+ * A bump allocator maintains a fixed-size region of memory from which
+ * variably-sized subregions can be allocated.
  *
- * @param ptr  Pointer previously acquired from ah_calloc(), ah_malloc() or
- *             ah_realloc().
- * @param size Desired size, in bytes, of chunk after reallocation.
- * @return A chunk of memory of at least @a size bytes that contain the
- *         contents previously associated with @a ptr. @c NULL if the
- *         reallocation failed, in which case the chunk of @a ptr remains
- *         unmodified.
+ * Every time a subregion is allocated, the allocator increments, or @a bumps,
+ * a pointer to the first byte right after the allocated subregion. Since no
+ * record is kept of how large the individual subregions are, they cannot be
+ * freed individually. Rather, the bump allocator is freed by @a resetting it,
+ * which means that the mentioned pointer is updated to point at the first byte
+ * in its fixed-size memory region.
  *
- * @note If @a size <em>is not</em> @c 0 and @a ptr @e is @c NULL, this function
- *       will behave exactly as a call to ah_malloc() with the same size.
+ * It is your responsibility to ensure that any destructuring routines relevant
+ * to the allocated subregions are executed before the allocator is reset or
+ * its memory is freed.
  *
- * @warning If @a size <em>is not</em> @c 0 and @a ptr <em>is not</em> @c NULL,
- *          this function may, if implemented so, always return @c NULL.
- *
- * @warning If @a size @e is @c 0 and @a ptr <em>is not</em> @c NULL, the
- *          function may either return a pointer to a memory chunk with size
- *          @c 0 or return @c NULL.
- *
- * @warning If @a size @e is @c 0 and @a ptr @e is @c NULL, the result of
- *          calling this function is undefined.
+ * @{
  */
-#define ah_realloc(ptr, size) AH_CONF_REALLOC((ptr), (size))
+
+/**
+ * Initializes bump allocator for subsequent use.
+ *
+ * @param[out] b    Pointer to bump allocator to initialize.
+ * @param[in]  base Pointer to memory region from which to allocate subregions.
+ * @param[in]  sz   Size of memory region pointed at by @a base.
+ *
+ * @retval AH_OK     if successful.
+ * @retval AH_EINVAL if @a b is @c NULL or if @a base is @c NULL and @a sz is
+ *                   not @c 0u.
+ * @retval AH_ERANGE if aligning @a base and adding adding @a to it produces a
+ *                   pointer that points beyond the end of the addressable
+ *                   memory space.
+ */
+ah_err_t ah_bump_init(ah_bump_t* b, void* base, size_t sz);
+
+/**
+ * Allocates a subregion of memory from @a b with a size of @a sz bytes.
+ *
+ * @param[in,out] b  Pointer to bump allocator.
+ * @param[in]     sz The smallest number of contiguous bytes that must be
+ *                   possible to store in the memory allocated by this
+ *                   operation.
+ *
+ * @return Pointer to beginning of allocated subregion, or @c NULL if not
+ *         enough bytes remains in @a b to satisfy the request.
+ *
+ * @warning The given size @a sz will be rounded up to the nearest multiple of
+ *          the size of a pointer, unless it already is a multiple of that
+ *          size. This means that this call can fail even if it may seem as if
+ *          the allocator has enough memory to satisfy the request.
+ */
+void* ah_bump_alloc(ah_bump_t* b, size_t sz)
+    ahi_bump_alloc_attributes;
+
+/**
+ * Resets referenced bump allocator @a b.
+ *
+ * Resetting entails the offset pointer of @a b being made equal to its base
+ * pointer, which points to the beginning of the fixed-size memory region used
+ * by the allocator.
+ *
+ * @param b Pointer to bump allocator to reset.
+ */
+ah_inline void ah_bump_reset(ah_bump_t* b)
+{
+    if (b != NULL) {
+        b->off = b->base;
+    }
+}
+
+/**
+ * Reports the capacity, in bytes, of the referenced bump allocator @a b.
+ *
+ * @param b Pointer to bump allocator.
+ *
+ * @return Capacity of @a b, or @c 0u if @a b is @c NULL.
+ */
+ah_inline size_t ah_bump_get_capacity(const ah_bump_t* b)
+{
+    return b != NULL ? (size_t) (b->end - b->base) : 0u;
+}
+
+/**
+ * Reports the space left, in bytes, in the referenced bump allocator @a b.
+ *
+ * @param b Pointer to bump allocator.
+ *
+ * @return Space left in @a b, or @c 0u if @a b is @c NULL.
+ */
+ah_inline size_t ah_bump_get_free_size(const ah_bump_t* b)
+{
+    return b != NULL ? (size_t) (b->end - b->off) : 0u;
+}
+
+/**
+ * Reports the space used, in bytes, by the referenced bump allocator @a b.
+ *
+ * @param b Pointer to bump allocator.
+ *
+ * @return Space left in @a b, or @c 0u if @a b is @c NULL.
+ */
+ah_inline size_t ah_bump_get_used_size(const ah_bump_t* b)
+{
+    return b != NULL ? (size_t) (b->off - b->base) : 0u;
+}
+
+/** @} */
+
+/**
+ * @name Page Allocation
+ *
+ * The page is the smallest unit of memory, in bytes, that can be requested
+ * directly from the platform operating system or memory manager. This page
+ * allocator allows for these pages to be requested and returned directly.
+ *
+ * Page allocation is typically used to implement other kinds of allocation,
+ * such as the @c malloc() function of C99 standard library and the slab
+ * allocator of this library.
+ *
+ * @{
+ */
+
+/**
+ * Allocates zero or more memory pages.
+ *
+ * Allocates the smallest number of contiguous pages required to store the
+ * given @a sz number of bytes. The page is the smallest unit of memory that
+ * can be requested directly from the platform operating system or memory
+ * manager.
+ *
+ * @param[in] sz The smallest number of contiguous bytes that must be possible
+ *               to store in the memory allocated by this operation.
+ *
+ * @return Pointer to the beginning of the allocated memory region, or @c NULL
+ *         if the operation failed or if @a sz is @c 0u.
+ */
+ah_inline void* ah_page_alloc(size_t sz)
+{
+    return ahp_page_alloc(sz);
+}
+
+/**
+ * Frees the memory pages associated with the given @a ptr.
+ *
+ * @param[in,out] ptr Pointer received via a previous call to ah_page_alloc().
+ * @param[in]     sz  The size provided to ah_page_alloc() when the memory
+ *                    referred to by @a ptr was allocated.
+ *
+ * @warning The given `ptr` must have been received via a previous call to
+ *          ah_page_alloc() and must not have been freed since then.
+ */
+ah_inline void ah_page_free(void* ptr, size_t sz)
+{
+    ahp_page_free(ptr, sz);
+}
+
+/**
+ * Reports the size of a single memory page.
+ *
+ * @return The size, in bytes, of a single memory page.
+ */
+ah_inline size_t ah_page_get_size(void)
+{
+    return ahp_page_get_size();
+}
+
+/** @} */
+
+/**
+ * @name Slab Allocation
+ *
+ * A slab allocator maintains a variable number of fixed-size <em>slots</em>,
+ * each of which can be allocated and freed very efficiently. Whenever the slab
+ * allocator runs out of slots, it allocates a new <em>bank</em> of slots using
+ * the page allocator. Allocated banks are not freed until the slab allocator
+ * itself is terminated.
+ *
+ * In contrast to using something akin to the C99 @c realloc() function to grow
+ * a chunk of memory, this method never requires already allocated slots to be
+ * copied to new memory. This makes it safe to store pointers into these slots
+ * as long as the slots and the slab allocator itself are not deallocated or
+ * terminated. Another advantage of the slab allocator is that all of its
+ * currently allocated slots can be deallocated at once by calling
+ * ah_slab_term().
+ *
+ * @{
+ */
+
+/**
+ * Initializes referenced slab allocator @a s for subsequent use.
+ *
+ * @param s       Pointer to slab to initialize.
+ * @param slot_sz The smallest accepted size of each slab slot, in bytes.
+ *
+ * @retval AH_OK     if successful.
+ * @retval AH_EINVAL if @a s is @c NULL.
+ * @retval AH_ERANGE if the byte size of a slab slot or bank falls outside the
+ *                   set of numbers that can be expressed by @c size_t.
+ */
+ah_err_t ah_slab_init(ah_slab_t* s, size_t slot_sz);
+
+/**
+ * Terminates referenced slab @a s, freeing all of its memory.
+ *
+ * If a callback function @a slot_cb_or_null is given, that function is called
+ * once for each currently allocated slot before this function returns.
+ *
+ * @param s               Pointer to slab to terminate.
+ * @param slot_cb_or_null Allocated slot callback function, or @c NULL.
+ */
+void ah_slab_term(ah_slab_t* s, void (*slot_cb_or_null)(void*));
+
+/**
+ * Allocates a free slot from the referenced slab @a s.
+ *
+ * If no free slots are available, an attempt will be made internally to
+ * allocate another bank. If that attempt fails, @c NULL is returned.
+ *
+ * @param s Pointer to slab to allocate slot from.
+ *
+ * @return Pointer to beginning of allocated slot, or @c NULL if the allocation
+ *         failed.
+ */
+void* ah_slab_alloc(ah_slab_t* s);
+
+/**
+ * Free a slot previously allocated from the same slab allocator @a s.
+ *
+ * The given @a ptr must have been received via a previous call to
+ * ah_slab_alloc() with the same @a s and must not have been freed since then.
+ *
+ * @param s   Pointer to slab to allocate slot from.
+ * @param ptr Pointer received via a previous call to ah_slab_alloc().
+ */
+void ah_slab_free(ah_slab_t* s, void* ptr);
+
+/** @} */
 
 #endif

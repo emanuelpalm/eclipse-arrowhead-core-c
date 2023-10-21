@@ -1,201 +1,72 @@
 cmake_minimum_required(VERSION 3.15)
-project(
-    ah_base
-    LANGUAGES C
-    VERSION 1.0.0
-)
+project(ah_base LANGUAGES C VERSION 1.0.0)
+
 set(CMAKE_C_STANDARD 99)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 set(
-    SOURCE_FILES
-    include/ah/abort.h
+    AH_BASE_SOURCE_FILES
     include/ah/alloc.h
-    include/ah/assert.h
     include/ah/buf.h
-    include/ah/conf.h
-    include/ah/defs.h
+    include/ah/ckdint.h
+    include/ah/def.h
     include/ah/err.h
-    include/ah/internal/_err.h
-    include/ah/internal/_loop.h
-    include/ah/internal/_sock.h
-    include/ah/internal/_task.h
-    include/ah/internal/_tcp.h
-    include/ah/internal/_time.h
-    include/ah/internal/_udp.h
-    include/ah/internal/collections/list.h
-    include/ah/internal/collections/ring.h
-    include/ah/internal/collections/slab.h
-    include/ah/intrin.h
-    include/ah/ip.h
-    include/ah/loop.h
-    include/ah/math.h
-    include/ah/base.h
-    include/ah/rw.h
-    include/ah/sock.h
-    include/ah/task.h
-    include/ah/tcp.h
     include/ah/time.h
-    include/ah/udp.h
-    include/ah/utf8.h
-    src/abort.c
-    src/buf.c
-    src/collections/list.c
-    src/collections/ring.c
-    src/collections/slab.c
-    src/err.c
-    src/ip.c
-    src/loop-evt.h
-    src/loop.c
-    src/math.c
-    src/rw.c
-    src/sock.c
-    src/task.c
-    src/tcp-in.c
-    src/tcp-out.c
-    src/tcp-trans-default.c
-    src/tcp-trans-default.h
-    src/tcp-trans.c
-    src/tcp.c
-    src/time.c
-    src/udp-in.c
-    src/udp-out.c
-    src/udp-trans-default.c
-    src/udp-trans-default.h
-    src/udp-trans.c
-    src/udp.c
-    src/utf8.c
+    internal/ahi/ckdint.h
+    internal/ahi/def.h
+    src/alloc/align.c
+    src/alloc/bump.c
+    src/alloc/slab.c
+    internal/ahi/alloc.h
 )
+add_library(ah_base STATIC ${AH_BASE_SOURCE_FILES})
 
-if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    list(
-        APPEND
-        SOURCE_FILES
-        include/ah/internal/_buf-posix.h
-        include/ah/internal/_loop-kqueue.h
-        include/ah/internal/_sock-bsd.h
-        include/ah/internal/_task-kqueue.h
-        include/ah/internal/_tcp-kqueue.h
-        include/ah/internal/_time-darwin.h
-        include/ah/internal/_udp-kqueue.h
-        src/abort-posix.c
-        src/buf-posix.c
-        src/loop-kqueue.c
-        src/sock-bsd.c
-        src/task-kqueue.c
-        src/tcp-trans-default-bsd.c
-        src/tcp-trans-default-kqueue.c
-        src/time-darwin.c
-        src/udp-trans-default-bsd.c
-        src/udp-trans-default-kqueue.c
-    )
-endif ()
-
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    list(
-        APPEND
-        SOURCE_FILES
-        include/ah/internal/_buf-posix.h
-        include/ah/internal/_loop-uring.h
-        include/ah/internal/_sock-bsd.h
-        include/ah/internal/_task-uring.h
-        include/ah/internal/_tcp-uring.h
-        include/ah/internal/_time-uring.h
-        include/ah/internal/_udp-uring.h
-        src/abort-posix.c
-        src/buf-posix.c
-        src/loop-uring.c
-        src/sock-bsd.c
-        src/task-uring.c
-        src/tcp-trans-default-bsd.c
-        src/tcp-trans-default-uring.c
-        src/time-uring.c
-        src/udp-trans-default-bsd.c
-        src/udp-trans-default-uring.c
-    )
-endif ()
-
-if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    list(
-        APPEND
-        SOURCE_FILES
-        include/ah/internal/_buf-win32.h
-        include/ah/internal/_loop-iocp.h
-        include/ah/internal/_sock-bsd.h
-        include/ah/internal/_task-iocp.h
-        include/ah/internal/_tcp-iocp.h
-        include/ah/internal/_time-win32.h
-        include/ah/internal/_udp-iocp.h
-        src/abort-win32.c
-        src/buf-win32.c
-        src/loop-iocp.c
-        src/sock-bsd.c
-        src/task-iocp.c
-        src/tcp-trans-default-bsd.c
-        src/tcp-trans-default-iocp.c
-        src/time-win32.c
-        src/udp-trans-default-bsd.c
-        src/udp-trans-default-iocp.c
-        src/winapi.c
-        src/winapi.h
-    )
-endif ()
-
-add_library(ah_base STATIC ${SOURCE_FILES})
 target_include_directories(
     ah_base
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/internal>
 )
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    # Try to find a local installation of liburing.
-    include(FindLiburing)
-    if (NOT Liburing_FOUND)
-        # If no such is available, download, install and then find the downloaded liburing version.
-        include(DownloadLiburing)
-    endif ()
-    target_link_libraries(ah_base PUBLIC Liburing::liburing)
+add_subdirectory(platform)
+if (NOT TARGET ah_base_platform)
+    message(FATAL_ERROR "No 'ah_base_platform' target exists for '${CMAKE_SYSTEM_NAME}'.")
 endif ()
+target_link_libraries(ah_base PUBLIC ah_base_platform)
 
 include(FindGit)
 if (GIT_FOUND)
     execute_process(
-        COMMAND "${GIT_EXECUTABLE}" describe --always
+        COMMAND "${GIT_EXECUTABLE}" rev-parse --short HEAD
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        RESULT_VARIABLE GIT_DESCRIBE_ALWAYS_RESULT
-        OUTPUT_VARIABLE GIT_DESCRIBE_ALWAYS_OUTPUT
-        ERROR_VARIABLE GIT_DESCRIBE_ALWAYS_ERROR
+        RESULT_VARIABLE GIT_RESULT
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        ERROR_VARIABLE GIT_ERROR
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_STRIP_TRAILING_WHITESPACE
     )
-    if (NOT ${GIT_DESCRIBE_ALWAYS_RESULT} EQUAL 0)
-        message(WARNING "Failed to execute `${GIT_EXECUTABLE} describe --always`; ${GIT_DESCRIBE_ALWAYS_ERROR}")
+    if (NOT ${GIT_RESULT} EQUAL 0)
+        message(WARNING "Failed to execute `${GIT_EXECUTABLE} describe --always`; ${GIT_ERROR}")
     endif ()
 endif ()
 
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_base.gen.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ah/internal/_base.gen
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/ahi/build.gen.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/ahi/build.gen
     @ONLY
 )
 
 set(
-    TEST_FILES
-    test/main.c
-    test/test-buf.c
-    test/test-collections-list.c
-    test/test-collections-ring.c
-    test/test-ip.c
-    test/test-math.c
-    test/test-sock.c
-    test/test-task.c
-    test/test-tcp.c
-    test/test-time.c
-    test/test-udp.c
-    test/test-utf8.c
+    AH_BASE_TEST_FILES
+    tests/main.c
+    tests/suite-alloc-align.c
+    tests/suite-alloc-bump.c
+    tests/suite-alloc-page.c
+    tests/suite-alloc-slab.c
+    tests/suite-buf.c
+    tests/suite-ckdint.c
+    tests/suite-def.c
+    tests/suite-err.c
+    tests/suite-time.c
 )
 
-add_executable(ah_base_tests ${TEST_FILES})
+add_executable(ah_base_tests ${AH_BASE_TEST_FILES})
 target_link_libraries(ah_base_tests PRIVATE ah_base ah_unit)

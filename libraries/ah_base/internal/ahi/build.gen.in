@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: EPL-2.0
+
+#ifndef AHI_BUILD_GEN
+#define AHI_BUILD_GEN
+
+// clang-format off
+
+#define AHI_BASE_VERSION        "@PROJECT_VERSION@+@CMAKE_SYSTEM_NAME@.@GIT_COMMIT_HASH@"
+#define AHI_BASE_VERSION_MAJOR  @PROJECT_VERSION_MAJOR@
+#define AHI_BASE_VERSION_MINOR  @PROJECT_VERSION_MINOR@
+#define AHI_BASE_VERSION_PATCH  @PROJECT_VERSION_PATCH@
+#define AHI_BASE_COMMIT         "@GIT_COMMIT_HASH@"
+#define AHI_BASE_PLATFORM       "@CMAKE_SYSTEM_NAME@"
+
+// clang-format on
+
+#endif

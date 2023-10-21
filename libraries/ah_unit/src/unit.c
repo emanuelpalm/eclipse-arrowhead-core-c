@@ -1,214 +1,328 @@
 // SPDX-License-Identifier: EPL-2.0
 
-#include "ah/unit.h"
-
-#include <ah/assert.h>
 #include <ah/err.h>
+#include <ah/unit.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-static void s_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, va_list args);
-static void s_print_failure(ah_unit_ctx_t ctx, const char* format, va_list args);
+static void ahi_report_err(ahi_unit_t* u, ahi_unit_loc_t l, const char* fmt, ...);
 
-ah_extern bool ah_unit_assert(ah_unit_ctx_t ctx, ah_unit_res_t* res, bool is_success, const char* format, ...)
+void ahi_unit_init(ahi_unit_t* u, int argc, const char** argv)
 {
-    if (is_success) {
-        ah_unit_pass(res);
-        return true;
-    }
+    *u = (ahi_unit_t) {
+        ._suite_state = AHI_STATE_STOPPED,
+        ._test_state = AHI_STATE_STOPPED,
+        ._case_state = AHI_STATE_STOPPED,
+    };
 
-    va_list args;
-    va_start(args, format);
-    s_fail(ctx, res, format, args);
-    va_end(args);
-
-    return false;
+    (void) argc;
+    (void) argv;
 }
 
-ah_extern bool ah_unit_assert_eq_cstr(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, const char* expected)
+void ahi_unit_exit(ahi_unit_t* u)
 {
-    if (actual == expected) {
-        goto pass;
-    }
-    if (actual == NULL || expected == NULL) {
-        goto fail;
-    }
-    if (strcmp(actual, expected) != 0) {
-        goto fail;
+    if (u->_suite_run_count != 0u) {
+        int suite_pass_count = u->_suite_run_count;
+        suite_pass_count -= u->_suite_skip_count;
+        suite_pass_count -= u->_suite_fail_count;
+
+        printf("Passed %d/%d suites", suite_pass_count, u->_suite_run_count);
+
+        if (u->_suite_skip_count != 0u) {
+            printf(" (skipped %d)", u->_suite_skip_count);
+        }
+
+        int test_pass_count = u->_test_run_count;
+        test_pass_count -= u->_test_skip_count;
+        test_pass_count -= u->_test_fail_count;
+
+        printf(" and %d/%d tests", test_pass_count, u->_test_run_count);
+
+        if (u->_test_skip_count != 0u) {
+            printf(" (skipped %d)", u->_test_skip_count);
+        }
+
+        puts(".");
     }
 
-pass:
-    ah_unit_pass(res);
+    if (u->_suite_fail_count != 0u) {
+        fprintf(stderr, "Failed %d suites and %d tests.\n",
+            u->_suite_fail_count, u->_test_fail_count);
+    }
+
+    exit(u->_suite_fail_count == 0u ? EXIT_SUCCESS : EXIT_FAILURE);
+}
+
+void ahi_unit_run_suite(ahi_unit_t* u, const char* msg, void (*suite)(ahi_unit_t*))
+{
+    u->_suite_run_count += 1u;
+    u->_suite_msg = msg;
+    u->_suite_state = AHI_STATE_RUNNING;
+
+    u->_test_idx = 0u;
+    u->_test_msg = NULL;
+    u->_test_state = AHI_STATE_STOPPED;
+
+    u->_case_idx = 0u;
+    u->_case_msg[0u] = '\0';
+    u->_case_state = AHI_STATE_STOPPED;
+
+    suite(u);
+}
+
+bool ahi_unit_run_test(ahi_unit_t* u, const char* msg)
+{
+    u->_test_run_count += 1u;
+    u->_test_idx += 1u;
+    u->_test_msg = msg;
+    u->_test_state = AHI_STATE_RUNNING;
+
+    u->_case_idx = 0u;
+    u->_case_msg[0u] = '\0';
+    u->_case_state = AHI_STATE_STOPPED;
+
     return true;
-
-fail:
-    ah_unit_fail(ctx, res, "got `%s`; expected `%s`", actual, expected);
-    return false;
 }
 
-ah_extern bool ah_unit_assert_eq_enum(ah_unit_ctx_t ctx, ah_unit_res_t* res, int actual, int expected, const char* (*to_str)(int) )
+bool ahi_unit_run_case(ahi_unit_t* u, const char* fmt, ...)
 {
-    ah_assert_always(to_str != NULL);
+    u->_case_idx += 1u;
 
-    if (actual == expected) {
-        ah_unit_pass(res);
-        return true;
-    }
+    const size_t sz = sizeof(u->_case_msg);
 
-    ah_unit_fail(ctx, res, "got `%s` (%d); expected `%s` (%d)", to_str(actual), actual, to_str(expected), expected);
-    return false;
-}
-
-ah_extern bool ah_unit_assert_eq_err(ah_unit_ctx_t ctx, ah_unit_res_t* res, ah_err_t actual, ah_err_t expected)
-{
-    if (actual == expected) {
-        ah_unit_pass(res);
-        return true;
-    }
-
-    char actual_buf[128u];
-    ah_strerror_r(actual, actual_buf, sizeof(actual_buf));
-
-    char expected_buf[128u];
-    ah_strerror_r(expected, expected_buf, sizeof(expected_buf));
-
-    ah_unit_fail(ctx, res, "got `%s` (%d); expected `%s` (%d)", actual_buf, actual, expected_buf, expected);
-    return false;
-}
-
-ah_extern bool ah_unit_assert_eq_mem(ah_unit_ctx_t ctx, ah_unit_res_t* res, const void* actual_, size_t actual_size, const void* expected_, size_t expected_size)
-{
-    const unsigned char* actual = actual_;
-    const unsigned char* expected = expected_;
-
-    if (actual_size == expected_size && memcmp(actual, expected, expected_size) == 0) {
-        ah_unit_pass(res);
-        return true;
-    }
-
-    char actual_buf[128u];
-    const unsigned char* actual_end = &actual[actual_size];
-    size_t actual_i = 0u;
-    while (actual_i < sizeof(actual_buf) - 4u && actual != actual_end) {
-        (void) snprintf(&actual_buf[actual_i], 4u, "%02X ", actual[0u]);
-        actual_i += 3u;
-        actual = &actual[1];
-    }
-    if (actual_i >= sizeof(actual_buf) - 4u) {
-        memcpy(&actual_buf[sizeof(actual_buf) - 4u], "...", 4);
-    }
-
-    char expected_buf[128u];
-    const unsigned char* expected_end = &expected[expected_size];
-    size_t expected_i = 0u;
-    while (expected_i < sizeof(expected_buf) - 4u && expected != expected_end) {
-        (void) snprintf(&expected_buf[expected_i], 4u, "%02X ", expected[0u]);
-        expected_i += 3u;
-        expected = &expected[1];
-    }
-    if (expected_i >= sizeof(expected_buf) - 4u) {
-        memcpy(&expected_buf[sizeof(expected_buf) - 4u], "...", 4);
-    }
-
-    ah_unit_fail(ctx, res, "got %s; expected %s", actual_buf, expected_buf);
-    return false;
-}
-
-ah_extern bool ah_unit_assert_eq_intmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, intmax_t actual, intmax_t expected)
-{
-    if (actual == expected) {
-        ah_unit_pass(res);
-        return true;
-    }
-
-    ah_unit_fail(ctx, res, "got %" PRIiMAX "; expected %" PRIiMAX, actual, expected);
-    return false;
-}
-
-ah_extern bool ah_unit_assert_eq_str(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* actual, size_t actual_length, const char* expected, size_t expected_length)
-{
-    if (actual == expected) {
-        goto pass;
-    }
-    if (actual == NULL || expected == NULL) {
-        goto fail;
-    }
-    if (actual_length != expected_length) {
-        goto fail;
-    }
-    if (memcmp(actual, expected, expected_length) != 0) {
-        goto fail;
-    }
-
-pass:
-    ah_unit_pass(res);
-    return true;
-
-fail:
-    ah_unit_fail(ctx, res, "got `%s`; expected `%s`", actual, expected);
-    return false;
-}
-
-ah_extern bool ah_unit_assert_eq_uintmax(ah_unit_ctx_t ctx, ah_unit_res_t* res, uintmax_t actual, uintmax_t expected)
-{
-    if (actual == expected) {
-        ah_unit_pass(res);
-        return true;
-    }
-
-    ah_unit_fail(ctx, res, "got %" PRIuMAX "; expected %" PRIuMAX, actual, expected);
-    return false;
-}
-
-ah_extern void ah_unit_print_results(const struct ah_unit_res* res)
-{
-    if (res == NULL) {
-        (void) puts("Nothing to report; res is NULL.");
-        return;
-    }
-
-    if (res->fail_count == 0) {
-        (void) printf("Passed all %d executed assertions.\n", res->assertion_count);
+    if (fmt != NULL) {
+        va_list args;
+        va_start(args, fmt);
+        int res = vsnprintf(u->_case_msg, sz, fmt, args);
+        va_end(args);
+        if (res < 0) {
+            (void) strncpy(u->_case_msg, fmt, sz);
+        }
     }
     else {
-        (void) fprintf(stderr, "Failed %d out of %d executed assertions!\n", res->fail_count, res->assertion_count);
+        (void) strncpy(u->_case_msg, "--", sz);
     }
+
+    if (u->_case_state == AHI_STATE_STOPPED) {
+        u->_case_state = AHI_STATE_RUNNING;
+    }
+    else {
+        u->_test_run_count += 1u;
+    }
+
+    return true;
 }
 
-ah_extern void ah_unit_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, ...)
+bool ahi_unit_eq_bool(ahi_unit_t* u, ahi_unit_loc_t l, bool a, bool b)
 {
+    if (a == b) {
+        return true;
+    }
+
+    const char* fmt = "Expected `%s`; but got `%s`.\n\n";
+    ahi_report_err(u, l, fmt, a ? "true" : "false", b ? "true" : "false");
+
+    return false;
+}
+
+bool ahi_unit_eq_err(ahi_unit_t* u, ahi_unit_loc_t l, ah_err_t a, ah_err_t b)
+{
+    if (a == b) {
+        return true;
+    }
+
+    const char* fmt = "Expected `%s`; but got `%s`.\n\n";
+    ahi_report_err(u, l, fmt, ah_err_get_s(a), ah_err_get_s(b));
+
+    return false;
+}
+
+bool ahi_unit_eq_int(ahi_unit_t* u, ahi_unit_loc_t l, intmax_t a, intmax_t b)
+{
+    if (a == b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIiMAX "; received: %" PRIiMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+bool ahi_unit_eq_ptr(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b)
+{
+    if (a == b) {
+        return true;
+    }
+
+    const char* fmt = "Expecting %p; received %p.\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+bool ahi_unit_eq_str(ahi_unit_t* u, ahi_unit_loc_t l, const char* a, const char* b)
+{
+    if (strcmp(a, b) == 0) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %s\n\t\tReceived: %s\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+bool ahi_unit_eq_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
+{
+    if (a == b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %#" PRIxMAX "; received: %#" PRIxMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+bool ahi_unit_eq_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
+{
+    if (a == b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIuMAX "; received: %" PRIuMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+bool ahi_unit_ge_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
+{
+    if (a >= b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIxMAX " >= %" PRIxMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, a);
+
+    return false;
+}
+
+bool ahi_unit_gt_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
+{
+    if (a > b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIxMAX " > %" PRIxMAX "\n\n";
+    ahi_report_err(u, l, fmt, b, a);
+
+    return false;
+}
+
+bool ahi_unit_ne_ptr(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b)
+{
+    if (a != b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %p != %p\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+bool ahi_unit_ne_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
+{
+    if (a != b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIuMAX " != %" PRIuMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+void ahi_unit_skip(ahi_unit_t* u, ahi_unit_loc_t l, const char* fmt, ...)
+{
+    if (u->_suite_state != AHI_STATE_STOPPED && u->_test_state != AHI_STATE_STOPPED) {
+        (void) printf("TEST SKIPPED: [%s] %s\n\t", u->_suite_msg, u->_test_msg);
+
+        if (u->_case_state != AHI_STATE_STOPPED) {
+            (void) printf("CASE[%d] %s ", u->_case_idx, u->_case_msg);
+        }
+
+        printf("%s:%d\n\t\t", l._file, l._line);
+    }
+    else if (u->_suite_state != AHI_STATE_STOPPED) {
+        (void) printf("SUITE SKIPPED: %s\n\t%s:%d\n\t\t", u->_suite_msg, l._file, l._line);
+    }
+
     va_list args;
-    va_start(args, format);
-    s_fail(ctx, res, format, args);
+    va_start(args, fmt);
+    (void) vprintf(fmt, args);
     va_end(args);
-}
 
-ah_extern void ah_unit_pass(ah_unit_res_t* res)
-{
-    if (res != NULL) {
-        res->assertion_count += 1u;
+    fputs("\n\n", stdout);
+
+    if (u->_case_state == AHI_STATE_RUNNING) {
+        u->_case_state = AHI_STATE_SKIPPING;
+        if (u->_test_state == AHI_STATE_SKIPPING) {
+            u->_test_skip_count += 1u;
+        }
+    }
+
+    if (u->_test_state == AHI_STATE_RUNNING) {
+        u->_test_state = AHI_STATE_SKIPPING;
+        u->_test_skip_count += 1u;
+    }
+
+    if (u->_suite_state == AHI_STATE_RUNNING) {
+        u->_suite_state = AHI_STATE_SKIPPING;
+        if (u->_test_state == AHI_STATE_STOPPED) {
+            u->_suite_skip_count += 1u;
+        }
     }
 }
 
-static void s_fail(ah_unit_ctx_t ctx, ah_unit_res_t* res, const char* format, va_list args)
+static void ahi_report_err(ahi_unit_t* u, ahi_unit_loc_t l, const char* fmt, ...)
 {
-    if (res != NULL) {
-        res->assertion_count += 1u;
-        res->fail_count += 1u;
+    if (u->_suite_state != AHI_STATE_STOPPED && u->_test_state != AHI_STATE_STOPPED) {
+        (void) fprintf(stderr, "TEST FAILED: [%s] %s\n\t", u->_suite_msg, u->_test_msg);
+
+        if (u->_case_state != AHI_STATE_STOPPED) {
+            (void) fprintf(stderr, "CASE[%d] %s ", u->_case_idx, u->_case_msg);
+        }
+
+        fprintf(stderr, "%s:%d\n\t\t", l._file, l._line);
     }
 
-    (void) fputs("FAIL ", stderr);
+    va_list args;
+    va_start(args, fmt);
+    (void) vfprintf(stderr, fmt, args);
+    va_end(args);
 
-    s_print_failure(ctx, format, args);
-}
+    fputs("\n\n", stdout);
 
-static void s_print_failure(ah_unit_ctx_t ctx, const char* format, va_list args)
-{
-    ah_assert_always(format != NULL);
+    if (u->_case_state == AHI_STATE_RUNNING) {
+        u->_case_state = AHI_STATE_FAILING;
+        if (u->_test_state == AHI_STATE_FAILING) {
+            u->_test_fail_count += 1u;
+        }
+    }
 
-    (void) fprintf(stderr, "%s:%d ", ctx.file, ctx.line);
-    (void) vfprintf(stderr, format, args);
-    (void) fputc('\n', stderr);
+    if (u->_test_state == AHI_STATE_RUNNING) {
+        u->_test_state = AHI_STATE_FAILING;
+        u->_test_fail_count += 1u;
+    }
+
+    if (u->_suite_state == AHI_STATE_RUNNING) {
+        u->_suite_state = AHI_STATE_FAILING;
+        u->_suite_fail_count += 1u;
+    }
 }
