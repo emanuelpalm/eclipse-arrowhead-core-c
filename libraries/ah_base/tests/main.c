@@ -11,6 +11,7 @@ int main(int argc, const char** argv)
     AH_UNIT_RUN_SUITE(alloc_page);
     AH_UNIT_RUN_SUITE(alloc_slab);
     AH_UNIT_RUN_SUITE(buf);
+    AH_UNIT_RUN_SUITE(bufc);
     AH_UNIT_RUN_SUITE(ckdint);
     AH_UNIT_RUN_SUITE(def);
     AH_UNIT_RUN_SUITE(err);

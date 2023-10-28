@@ -146,8 +146,8 @@ ah_inline size_t ah_buf_get_sz(ah_buf_t* b)
  *
  * @param[in] b Pointer to checked buffer.
  *
- * @return @c true, only if @a b is @c NULL, has a @c NULL @c base or @c a size
- *         being @c 0u. @c false otherwise.
+ * @return @c true, if @a b is @c NULL, has a @c NULL @c base or @c a size being
+ *         @c 0u. @c false otherwise.
  */
 ah_inline bool ah_buf_is_empty(ah_buf_t* b)
 {

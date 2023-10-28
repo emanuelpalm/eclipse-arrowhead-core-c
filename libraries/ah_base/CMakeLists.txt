@@ -63,6 +63,7 @@ set(
     tests/suite-alloc-page.c
     tests/suite-alloc-slab.c
     tests/suite-buf.c
+    tests/suite-bufc.c
     tests/suite-ckdint.c
     tests/suite-def.c
     tests/suite-err.c
