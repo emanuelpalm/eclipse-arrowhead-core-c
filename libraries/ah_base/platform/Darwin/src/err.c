@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-const char* ahp_err_get_s(int err)
+const char* ahp_err_get_s(ahp_err_t err)
 {
     static ahp_thread_local char buf[64u];
 

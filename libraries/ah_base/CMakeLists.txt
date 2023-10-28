@@ -11,12 +11,13 @@ set(
     include/ah/def.h
     include/ah/err.h
     include/ah/time.h
+    internal/ahi/alloc.h
+    internal/ahi/build.gen.in
     internal/ahi/ckdint.h
     internal/ahi/def.h
     src/alloc/align.c
     src/alloc/bump.c
     src/alloc/slab.c
-    internal/ahi/alloc.h
 )
 add_library(ah_base STATIC ${AH_BASE_SOURCE_FILES})
 
@@ -37,14 +38,14 @@ if (GIT_FOUND)
     execute_process(
         COMMAND "${GIT_EXECUTABLE}" rev-parse --short HEAD
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        RESULT_VARIABLE GIT_RESULT
-        OUTPUT_VARIABLE GIT_COMMIT_HASH
-        ERROR_VARIABLE GIT_ERROR
+        RESULT_VARIABLE AH_BASE_GIT_RESULT
+        OUTPUT_VARIABLE AH_BASE_GIT_COMMIT_HASH
+        ERROR_VARIABLE AH_BASE_GIT_ERROR
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_STRIP_TRAILING_WHITESPACE
     )
-    if (NOT ${GIT_RESULT} EQUAL 0)
-        message(WARNING "Failed to execute `${GIT_EXECUTABLE} describe --always`; ${GIT_ERROR}")
+    if (NOT ${AH_BASE_GIT_RESULT} EQUAL 0)
+        message(WARNING "Failed to execute `${GIT_EXECUTABLE} rev-parse --short HEAD`; ${AH_BASE_GIT_ERROR}")
     endif ()
 endif ()
 

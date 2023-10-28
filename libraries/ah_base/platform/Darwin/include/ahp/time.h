@@ -17,7 +17,7 @@ ahp_inline uint64_t ahp_time_now(void)
     return mach_absolute_time();
 }
 
-int ahp_time_diff(uint64_t a, uint64_t b, int64_t* ns);
+ahp_err_t ahp_time_diff(uint64_t a, uint64_t b, int64_t* ns);
 
 ahp_inline int ahp_time_cmp(uint64_t a, uint64_t b)
 {
@@ -30,8 +30,8 @@ ahp_inline int ahp_time_cmp(uint64_t a, uint64_t b)
     return 1;
 }
 
-int ahp_time_add(uint64_t t, int64_t ns, uint64_t* res);
-int ahp_time_sub(uint64_t t, int64_t ns, uint64_t* res);
+ahp_err_t ahp_time_add(uint64_t t, int64_t ns, uint64_t* res);
+ahp_err_t ahp_time_sub(uint64_t t, int64_t ns, uint64_t* res);
 
 ahp_inline bool ahp_time_is_after(uint64_t a, uint64_t b)
 {

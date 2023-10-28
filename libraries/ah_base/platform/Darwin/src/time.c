@@ -10,62 +10,62 @@
 static mach_timebase_info_data_t ahi_get_info(void);
 static bool ahi_mul_div_overflow(int64_t a, int64_t b, int64_t c, int64_t* res);
 
-int ahp_time_diff(uint64_t a, uint64_t b, int64_t* ns)
+ahp_err_t ahp_time_diff(uint64_t a, uint64_t b, int64_t* ns)
 {
     if (ns == NULL) {
-        return EINVAL;
+        return AHP_EINVAL;
     }
 
     int64_t d;
     if (__builtin_sub_overflow(a, b, &d)) {
-        return ERANGE;
+        return AHP_ERANGE;
     }
 
     mach_timebase_info_data_t info = ahi_get_info();
 
     if (ahi_mul_div_overflow(d, info.numer, info.denom, ns)) {
-        return ERANGE;
+        return AHP_ERANGE;
     }
 
-    return 0;
+    return AHP_OK;
 }
 
-int ahp_time_add(uint64_t t, int64_t ns, uint64_t* res)
+ahp_err_t ahp_time_add(uint64_t t, int64_t ns, uint64_t* res)
 {
     if (res == NULL) {
-        return EINVAL;
+        return AHP_EINVAL;
     }
 
     mach_timebase_info_data_t info = ahi_get_info();
 
     int64_t u;
     if (ahi_mul_div_overflow(ns, info.denom, info.numer, &u)) {
-        return ERANGE;
+        return AHP_ERANGE;
     }
     if (__builtin_add_overflow(t, u, res)) {
-        return ERANGE;
+        return AHP_ERANGE;
     }
 
-    return 0;
+    return AHP_OK;
 }
 
-int ahp_time_sub(uint64_t t, int64_t ns, uint64_t* res)
+ahp_err_t ahp_time_sub(uint64_t t, int64_t ns, uint64_t* res)
 {
     if (res == NULL) {
-        return EINVAL;
+        return AHP_EINVAL;
     }
 
     mach_timebase_info_data_t info = ahi_get_info();
 
     int64_t u;
     if (ahi_mul_div_overflow(ns, info.denom, info.numer, &u)) {
-        return ERANGE;
+        return AHP_ERANGE;
     }
     if (__builtin_sub_overflow(t, u, res)) {
-        return ERANGE;
+        return AHP_ERANGE;
     }
 
-    return 0;
+    return AHP_OK;
 }
 
 static mach_timebase_info_data_t ahi_get_info(void)
