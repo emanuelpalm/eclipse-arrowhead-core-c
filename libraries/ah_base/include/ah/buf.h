@@ -15,7 +15,9 @@
 #include "err.h"
 
 #include <ahp/buf.h>
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 
 /**
@@ -513,6 +515,49 @@ ah_inline bool ah_bufc_write_1(ah_bufc_t* c, uint8_t u)
     }
     c->w[0u] = u;
     c->w = &c->w[1u];
+    return true;
+}
+
+/**
+ * Writes formatted string to @a c and advances its write pointer to right after
+ * the written string.
+ *
+ * Internally, this function uses the C99 @c vsnprintf() function, which means
+ * that it accepts the same conversion specifications.
+ *
+ * @param[in,out] c   Pointer to destination cursor.
+ * @param[in]     fmt Format string.
+ * @param[in]     ... Format arguments.
+ *
+ * @return @c true only if all of the formatted string could be written to @a c.
+ *
+ * @note Writes an additional `\0` right after the end of the formatted string
+ *       without advancing the write pointer, but only if there is room for it.
+ *
+ * @note Does nothing and returns @c false if either of @a c or @a fmt is
+ *       @c NULL. If the internal call to @c vsnprintf() fails, or if not all of
+ *       its output could be written, then writable memory in @a c may have been
+ *       written to without its write pointer having been updated.
+ */
+ah_inline bool ah_bufc_write_fmt(ah_bufc_t* c, const char* fmt, ...)
+{
+    if (c == NULL || fmt == NULL) {
+        return false;
+    }
+
+    size_t sz = ah_bufc_get_writable_sz(c);
+
+    va_list args;
+    va_start(args, fmt);
+    int res = vsnprintf((char*) c->w, sz, fmt, args);
+    va_end(args);
+
+    if (res < 0 || ((uintmax_t) res) > ((uintmax_t) sz)) {
+        return false;
+    }
+
+    c->w = &c->w[res];
+
     return true;
 }
 
