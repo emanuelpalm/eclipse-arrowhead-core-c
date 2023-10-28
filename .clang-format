@@ -13,6 +13,8 @@ AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: true
 AlwaysBreakAfterReturnType: None
 BasedOnStyle: WebKit
+BinPackArguments: false
+BinPackParameters: false
 BraceWrapping:
   AfterCaseLabel: false
   AfterControlStatement: Never
@@ -25,10 +27,11 @@ BraceWrapping:
   IndentBraces: false
   SplitEmptyFunction: false
   SplitEmptyRecord: false
+BreakAfterAttributes: Always
 BreakBeforeBinaryOperators: All
 BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
-ColumnLimit: 0
+ColumnLimit: 80
 ContinuationIndentWidth: 4
 DerivePointerAlignment: false
 IncludeBlocks: Regroup

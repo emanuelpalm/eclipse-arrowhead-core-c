@@ -26,7 +26,7 @@
 # define AHI_BASE_PLATFORM      "Unknown"
 #endif
 
-#define ah_inline __attribute((unused)) static inline
-#define ah_unused __attribute((unused))
+#define ahi_inline __attribute((unused)) static inline
+#define ahi_unused __attribute((unused))
 
 #endif

@@ -157,8 +157,7 @@ ah_err_t ah_bump_init(ah_bump_t* b, void* base, size_t sz);
  *          size. This means that this call can fail even if it may seem as if
  *          the allocator has enough memory to satisfy the request.
  */
-void* ah_bump_alloc(ah_bump_t* b, size_t sz)
-    ahi_bump_alloc_attributes;
+ahi_bump_alloc_attrs void* ah_bump_alloc(ah_bump_t* b, size_t sz);
 
 /**
  * Resets referenced bump allocator @a b.
@@ -242,7 +241,7 @@ ah_inline size_t ah_bump_get_used_size(const ah_bump_t* b)
  * @return Pointer to the beginning of the allocated memory region, or @c NULL
  *         if the operation failed or if @a sz is @c 0u.
  */
-ah_inline void* ah_page_alloc(size_t sz)
+ah_inline ahi_page_alloc_attrs void* ah_page_alloc(size_t sz)
 {
     return ahp_page_alloc(sz);
 }
@@ -311,7 +310,11 @@ ah_err_t ah_slab_init(ah_slab_t* s, size_t slot_sz);
  * Terminates referenced slab @a s, freeing all of its memory.
  *
  * If a callback function @a slot_cb_or_null is given, that function is called
- * once for each currently allocated slot before this function returns.
+ * once for each currently allocated slot before this function returns. It is
+ * safe for the callback to call ah_slab_free() to free other slots allocated
+ * with the same @a s. If such a freed slot has already been visited by the
+ * callback, freeing it has no effect. If it has not yet been freed, however,
+ * freeing it prevents it from being provided to the callback.
  *
  * @param s               Pointer to slab to terminate.
  * @param slot_cb_or_null Allocated slot callback function, or @c NULL.
@@ -329,7 +332,7 @@ void ah_slab_term(ah_slab_t* s, void (*slot_cb_or_null)(void*));
  * @return Pointer to beginning of allocated slot, or @c NULL if the allocation
  *         failed.
  */
-void* ah_slab_alloc(ah_slab_t* s);
+ahi_slab_alloc_attrs void* ah_slab_alloc(ah_slab_t* s);
 
 /**
  * Free a slot previously allocated from the same slab allocator @a s.

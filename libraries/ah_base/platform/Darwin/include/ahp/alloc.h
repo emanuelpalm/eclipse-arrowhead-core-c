@@ -5,7 +5,11 @@
 
 #include <stddef.h>
 
-void* ahp_page_alloc(size_t sz);
+#define ahp_page_alloc_attrs                                                   \
+    __attribute((alloc_size(1), assume_aligned(sizeof(intptr_t))))
+
+ahp_page_alloc_attrs void* ahp_page_alloc(size_t sz);
+
 void ahp_page_free(void* ptr, size_t sz);
 size_t ahp_page_get_size(void);
 

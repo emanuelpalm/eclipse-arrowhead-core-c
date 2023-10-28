@@ -4,6 +4,8 @@
 #include "ah/ckdint.h"
 #include "ah/err.h"
 
+#include <assert.h>
+
 typedef struct ahi_slab_slot ahi_slab_slot_t;
 typedef struct ahi_slab_bank ahi_slab_bank_t;
 
@@ -19,7 +21,7 @@ struct ahi_slab_bank {
     uint8_t _body[];
 };
 
-static void ahi_for_each_slot(ah_slab_t* s, ahi_slab_bank_t* b, ahi_slab_cb_t cb);
+static void ahi_call_used(ah_slab_t* s, ahi_slab_bank_t* b, ahi_slab_cb_t cb);
 
 ah_err_t ah_slab_init(ah_slab_t* s, size_t slot_sz)
 {
@@ -38,7 +40,7 @@ ah_err_t ah_slab_init(ah_slab_t* s, size_t slot_sz)
     }
 
     size_t bank_sz;
-    if (ah_ckd_mul(&bank_sz, 32u, slot_sz)) {
+    if (ah_ckd_mul(&bank_sz, 4u, slot_sz)) {
         return AH_ERANGE;
     }
     if (ah_ckd_add(&bank_sz, bank_sz, sizeof(ahi_slab_bank_t))) {
@@ -78,7 +80,7 @@ void ah_slab_term(ah_slab_t* s, void (*slot_cb_or_null)(void*))
         ahi_slab_bank_t* next = this->_next_or_null;
 
         if (slot_cb_or_null != NULL) {
-            ahi_for_each_slot(s, this, slot_cb_or_null);
+            ahi_call_used(s, this, slot_cb_or_null);
         }
 
         ah_page_free(this, s->_bank_sz);
@@ -86,7 +88,7 @@ void ah_slab_term(ah_slab_t* s, void (*slot_cb_or_null)(void*))
     }
 }
 
-static void ahi_for_each_slot(ah_slab_t* s, ahi_slab_bank_t* b, ahi_slab_cb_t cb)
+static void ahi_call_used(ah_slab_t* s, ahi_slab_bank_t* b, ahi_slab_cb_t cb)
 {
     for (size_t i = 0; i < s->_slots_per_bank; i++) {
         ahi_slab_slot_t* slot = (void*) &b->_body[i * s->_slot_sz];
@@ -114,7 +116,7 @@ void* ah_slab_alloc(ah_slab_t* s)
 
         ahi_slab_slot_t* this_slot = (void*) bank->_body;
         ahi_slab_slot_t* next_slot;
-        for (size_t i = 1u; i < s->_slots_per_bank;) {
+        for (size_t i = 1u; i < s->_slots_per_bank; i++) {
             next_slot = (void*) &bank->_body[i * s->_slot_sz];
             this_slot->_next_free_or_null = next_slot;
             this_slot = next_slot;
@@ -124,10 +126,11 @@ void* ah_slab_alloc(ah_slab_t* s)
         free_slot = (void*) bank->_body;
     }
 
+    s->_ref_count += 1u;
     s->_slot_free_list = free_slot->_next_free_or_null;
     free_slot->_next_free_or_null = NULL;
 
-    return free_slot;
+    return free_slot->_body;
 }
 
 void ah_slab_free(ah_slab_t* s, void* ptr)
@@ -136,7 +139,10 @@ void ah_slab_free(ah_slab_t* s, void* ptr)
         return;
     }
 
+    s->_ref_count -= 1u; // TODO: Free here if zero and term called.
+
     ahi_slab_slot_t* slot = (void*) &((uint8_t*) ptr)[-sizeof(ahi_slab_slot_t)];
+    assert(slot->_next_free_or_null == NULL && "Confirmed double free.");
     slot->_next_free_or_null = s->_slot_free_list;
     s->_slot_free_list = slot;
 }

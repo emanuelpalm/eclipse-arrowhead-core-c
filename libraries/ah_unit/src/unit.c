@@ -250,17 +250,17 @@ bool ahi_unit_ne_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
 
 void ahi_unit_skip(ahi_unit_t* u, ahi_unit_loc_t l, const char* fmt, ...)
 {
-    if (u->_suite_state != AHI_STATE_STOPPED && u->_test_state != AHI_STATE_STOPPED) {
-        (void) printf("TEST SKIPPED: [%s] %s\n\t", u->_suite_msg, u->_test_msg);
-
+    if (u->_suite_state != AHI_STATE_STOPPED) {
+        if (u->_test_state == AHI_STATE_STOPPED) {
+            (void) printf("SUITE SKIPPED: [%s]\n\t", u->_suite_msg);
+        }
+        else {
+            (void) printf("TEST SKIPPED: [%s] %s\n\t", u->_suite_msg, u->_test_msg);
+        }
         if (u->_case_state != AHI_STATE_STOPPED) {
             (void) printf("CASE[%d] %s ", u->_case_idx, u->_case_msg);
         }
-
         printf("%s:%d\n\t\t", l._file, l._line);
-    }
-    else if (u->_suite_state != AHI_STATE_STOPPED) {
-        (void) printf("SUITE SKIPPED: %s\n\t%s:%d\n\t\t", u->_suite_msg, l._file, l._line);
     }
 
     va_list args;

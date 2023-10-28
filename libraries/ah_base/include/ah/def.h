@@ -15,6 +15,26 @@
  */
 
 /**
+ * @name Attribute Macros
+ *
+ * Macro constants used as attributes that can be placed before declarations.
+ *
+ * @{
+ */
+
+/**
+ * A function definition following this attribute is inlined by the compiler.
+ */
+#define ah_inline ahi_inline
+
+/**
+ * A declaration following this attribute may be unused.
+ */
+#define ah_unused ahi_unused
+
+/** @} */
+
+/**
  * @name Platform Constants
  *
  * Macro constants defined only if they identify the targeted platform.
@@ -30,17 +50,17 @@
  * Darwin is the name of the kernel that makes up the core of the operating
  * systems of Apple, such as macOS, iOS and watchOS.
  */
-#define AH_DARWIN
+# define AH_DARWIN
 
 /**
  * Defined only if the targeted platform is Linux.
  */
-#define AH_LINUX
+# define AH_LINUX
 
 /**
  * Defined only if the targeted platform is Windows.
  */
-#define AH_WINDOWS
+# define AH_WINDOWS
 
 #endif
 

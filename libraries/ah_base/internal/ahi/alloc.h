@@ -5,8 +5,14 @@
 
 #include <stddef.h>
 
-#define ahi_bump_alloc_attributes \
+#define ahi_bump_alloc_attrs \
     __attribute((alloc_size(2), assume_aligned(sizeof(intptr_t))))
+
+#define ahi_page_alloc_attrs \
+    __attribute((alloc_size(1), assume_aligned(sizeof(intptr_t))))
+
+#define ahi_slab_alloc_attrs \
+    __attribute((assume_aligned(sizeof(intptr_t))))
 
 ah_err_t ahi_align_ptr(uintptr_t alignment, uintptr_t* ptr);
 
