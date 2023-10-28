@@ -104,7 +104,7 @@ AH_UNIT_SUITE(alloc_slab)
         // Nothing to check.
     }
 
-    AH_UNIT_TEST("ah_slab_term() calls allocated slots.")
+    AH_UNIT_TEST("ah_slab_term() calls slots in use if given callback.")
     {
         err = ah_slab_init(&s, sizeof(ahi_thing_t));
         if (AH_UNIT_EQ_ERR(AH_OK, err)) {
@@ -121,6 +121,33 @@ AH_UNIT_SUITE(alloc_slab)
 
             ah_slab_term(&s, ahi_on_free);
             AH_UNIT_EQ_UINT(103, sum);
+        }
+    }
+
+    AH_UNIT_TEST("ah_slab_term() defers termination if no callback is given.")
+    {
+        err = ah_slab_init(&s, sizeof(ahi_thing_t));
+        if (AH_UNIT_EQ_ERR(AH_OK, err)) {
+            ahi_thing_t* a0 = ah_slab_alloc(&s);
+            ahi_thing_t* a1 = ah_slab_alloc(&s);
+            ahi_thing_t* a2 = ah_slab_alloc(&s);
+
+            int32_t sum = 0u;
+            *a0 = (ahi_thing_t) { .n = 100, .sum = &sum };
+            *a1 = (ahi_thing_t) { .n = 20, .sum = &sum };
+            *a2 = (ahi_thing_t) { .n = 3, .sum = &sum };
+
+            ah_slab_free(&s, a2);
+
+            ah_slab_term(&s, NULL);
+
+            *a0->sum += a0->n;
+            *a1->sum += a1->n;
+
+            ah_slab_free(&s, a0);
+            ah_slab_free(&s, a1);
+
+            AH_UNIT_EQ_UINT(120, sum);
         }
     }
 }

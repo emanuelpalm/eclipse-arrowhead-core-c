@@ -6,18 +6,22 @@
 
 #include <assert.h>
 
+#define AHI_IS_ALLOCATED ((ahi_slab_slot_t*) (-1))
+
 typedef struct ahi_slab_slot ahi_slab_slot_t;
 typedef struct ahi_slab_bank ahi_slab_bank_t;
 
 typedef void (*ahi_slab_cb_t)(void*);
 
 struct ahi_slab_slot {
-    ahi_slab_slot_t* _next_free_or_null;
+    // Set to AHI_IS_ALLOCATED while this slot is allocated.
+    ahi_slab_slot_t* _next_free;
+
     uint8_t _body[];
 };
 
 struct ahi_slab_bank {
-    ahi_slab_bank_t* _next_or_null;
+    ahi_slab_bank_t* _next;
     uint8_t _body[];
 };
 
@@ -72,12 +76,12 @@ void ah_slab_term(ah_slab_t* s, void (*slot_cb_or_null)(void*))
     }
 
     s->_ref_count -= 1u;
-    if (s->_ref_count != 0u) {
+    if (s->_ref_count != 0u && slot_cb_or_null == NULL) {
         return;
     }
 
     for (ahi_slab_bank_t* this = s->_bank_list; this != NULL;) {
-        ahi_slab_bank_t* next = this->_next_or_null;
+        ahi_slab_bank_t* next = this->_next;
 
         if (slot_cb_or_null != NULL) {
             ahi_call_used(s, this, slot_cb_or_null);
@@ -92,7 +96,7 @@ static void ahi_call_used(ah_slab_t* s, ahi_slab_bank_t* b, ahi_slab_cb_t cb)
 {
     for (size_t i = 0; i < s->_slots_per_bank; i++) {
         ahi_slab_slot_t* slot = (void*) &b->_body[i * s->_slot_sz];
-        if (slot->_next_free_or_null == NULL) {
+        if (slot->_next_free == AHI_IS_ALLOCATED) {
             cb(slot->_body);
         }
     }
@@ -111,24 +115,24 @@ void* ah_slab_alloc(ah_slab_t* s)
             return NULL;
         }
 
-        bank->_next_or_null = s->_bank_list;
+        bank->_next = s->_bank_list;
         s->_bank_list = bank;
 
         ahi_slab_slot_t* this_slot = (void*) bank->_body;
         ahi_slab_slot_t* next_slot;
         for (size_t i = 1u; i < s->_slots_per_bank; i++) {
             next_slot = (void*) &bank->_body[i * s->_slot_sz];
-            this_slot->_next_free_or_null = next_slot;
+            this_slot->_next_free = next_slot;
             this_slot = next_slot;
         }
-        next_slot->_next_free_or_null = NULL;
+        next_slot->_next_free = NULL;
 
         free_slot = (void*) bank->_body;
     }
 
     s->_ref_count += 1u;
-    s->_slot_free_list = free_slot->_next_free_or_null;
-    free_slot->_next_free_or_null = NULL;
+    s->_slot_free_list = free_slot->_next_free;
+    free_slot->_next_free = AHI_IS_ALLOCATED;
 
     return free_slot->_body;
 }
@@ -139,10 +143,19 @@ void ah_slab_free(ah_slab_t* s, void* ptr)
         return;
     }
 
-    s->_ref_count -= 1u; // TODO: Free here if zero and term called.
-
     ahi_slab_slot_t* slot = (void*) &((uint8_t*) ptr)[-sizeof(ahi_slab_slot_t)];
-    assert(slot->_next_free_or_null == NULL && "Confirmed double free.");
-    slot->_next_free_or_null = s->_slot_free_list;
+    assert(slot->_next_free == AHI_IS_ALLOCATED);
+    slot->_next_free = s->_slot_free_list;
     s->_slot_free_list = slot;
+
+    s->_ref_count -= 1u;
+    if (s->_ref_count != 0u) {
+        return;
+    }
+
+    for (ahi_slab_bank_t* this = s->_bank_list; this != NULL;) {
+        ahi_slab_bank_t* next = this->_next;
+        ah_page_free(this, s->_bank_sz);
+        this = next;
+    }
 }
