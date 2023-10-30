@@ -6,12 +6,14 @@ set(CMAKE_C_STANDARD 99)
 set(
     AH_BASE_SOURCE_FILES
     include/ah/alloc.h
+    include/ah/bit.h
     include/ah/buf.h
     include/ah/ckdint.h
     include/ah/def.h
     include/ah/err.h
     include/ah/time.h
     internal/ahi/alloc.h
+    internal/ahi/bit.h
     internal/ahi/build.gen.in
     internal/ahi/ckdint.h
     internal/ahi/def.h
