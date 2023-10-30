@@ -128,7 +128,7 @@ AH_UNIT_SUITE(bufc)
 
     AH_UNIT_TEST("ah_bufc_is_readable() returns false if `c` is NULL.")
     {
-        AH_UNIT_EQ_UINT(false, ah_bufc_is_readable(NULL));
+        AH_UNIT_EQ_BOOL(false, ah_bufc_is_readable(NULL));
     }
 
     AH_UNIT_TEST("ah_bufc_is_readable() returns false if not readable.")
@@ -145,7 +145,7 @@ AH_UNIT_SUITE(bufc)
 
     AH_UNIT_TEST("ah_bufc_is_writable() returns false if `c` is NULL.")
     {
-        AH_UNIT_EQ_UINT(false, ah_bufc_is_writable(NULL));
+        AH_UNIT_EQ_BOOL(false, ah_bufc_is_writable(NULL));
     }
 
     AH_UNIT_TEST("ah_bufc_is_writable() returns false if not writable.")
