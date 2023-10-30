@@ -115,6 +115,11 @@ AH_UNIT_SUITE(alloc_bump)
         }
     }
 
+    AH_UNIT_TEST("ah_bump_get_capacity() returns 0u if `b` is NULL.")
+    {
+        AH_UNIT_EQ_UINT(0u, ah_bump_get_capacity(NULL));
+    }
+
     AH_UNIT_TEST("ah_bump_get_capacity() reports correct capacity.")
     {
         err = ah_bump_init(&b, &region, sizeof(region));
@@ -130,6 +135,11 @@ AH_UNIT_SUITE(alloc_bump)
             AH_UNIT_EQ_UINT(sizeof(region), c0);
             AH_UNIT_EQ_UINT(sizeof(region), c1);
         }
+    }
+
+    AH_UNIT_TEST("ah_bump_get_used_size() returns 0u if `b` is NULL.")
+    {
+        AH_UNIT_EQ_UINT(0u, ah_bump_get_used_size(NULL));
     }
 
     AH_UNIT_TEST("ah_bump_get_used_size() reports correct size.")
@@ -149,6 +159,11 @@ AH_UNIT_SUITE(alloc_bump)
             AH_UNIT_EQ_UINT(sizeof(intptr_t) * 2u, u2);
             AH_UNIT_EQ_UINT(sizeof(intptr_t) * 3u, u3);
         }
+    }
+
+    AH_UNIT_TEST("ah_bump_get_free_size() returns 0u if `b` is NULL.")
+    {
+        AH_UNIT_EQ_UINT(0u, ah_bump_get_free_size(NULL));
     }
 
     AH_UNIT_TEST("ah_bump_get_free_size() reports correct size.")
