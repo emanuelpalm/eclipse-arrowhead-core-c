@@ -68,7 +68,7 @@ AH_UNIT_SUITE(buf)
     AH_UNIT_TEST("ah_buf_init_from_readable() refers to readable part of `c`.")
     {
         ah_bufc_t c = ah_bufc_from_readable(buffer, sizeof(buffer));
-        ah_bufc_skip_1(&c);
+        ah_bufc_skip(&c, 1u);
 
         err = ah_buf_init_from_readable(&b, &c);
         if (AH_UNIT_EQ_ERR(AH_OK, err)) {

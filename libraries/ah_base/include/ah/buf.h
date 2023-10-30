@@ -11,6 +11,7 @@
  * references to contiguous chunks of memory.
  */
 
+#include "bit.h"
 #include "def.h"
 #include "err.h"
 
@@ -298,30 +299,6 @@ ah_inline bool ah_bufc_is_writable(const ah_bufc_t* c)
 }
 
 /**
- * Reads one byte from @a src and writes it to @a dst.
- *
- * @param[in,out] src Pointer to source cursor.
- * @param[in,out] dst Pointer to destination cursor.
- *
- * @return @c true only if exactly one byte could be read from @a src and be
- *         written to @a dst.
- *
- * @note Does nothing and returns @c false if either of @a src or @a dst is
- *       @c NULL, if @a src has no readable byte, or if @a dst hos no writable
- *       byte.
- */
-ah_inline bool ah_bufc_copy_1(ah_bufc_t* src, ah_bufc_t* dst)
-{
-    if (src == NULL || src->r == src->w || dst == NULL || dst->w == dst->e) {
-        return false;
-    }
-    dst->w[0u] = src->r[0u];
-    src->r = &src->r[1u];
-    dst->w = &dst->w[1u];
-    return true;
-}
-
-/**
  * Reads @a n bytes from @a src and writes them to @a dst.
  *
  * @param[in,out] src Pointer to source cursor.
@@ -335,7 +312,7 @@ ah_inline bool ah_bufc_copy_1(ah_bufc_t* src, ah_bufc_t* dst)
  *       @c NULL, if less than @a n bytes can be read from @a src, or if less
  *       than @a n bytes can be written to @a dst.
  */
-ah_inline bool ah_bufc_copy_n(ah_bufc_t* src, ah_bufc_t* dst, size_t n)
+ah_inline bool ah_bufc_copy(ah_bufc_t* src, ah_bufc_t* dst, size_t n)
 {
     if (src == NULL || (size_t) (src->w - src->r) < n) {
         return false;
@@ -343,30 +320,9 @@ ah_inline bool ah_bufc_copy_n(ah_bufc_t* src, ah_bufc_t* dst, size_t n)
     if (dst == NULL || (size_t) (dst->e - dst->w) < n) {
         return false;
     }
-    memcpy(dst->w, src->r, n);
+    memmove(dst->w, src->r, n);
     src->r = &src->r[n];
     dst->w = &dst->w[n];
-    return true;
-}
-
-/**
- * Reads one byte from @a c and writes it to @a dst.
- *
- * @param[in]  c   Pointer to source cursor.
- * @param[out] dst Pointer to byte receiver.
- *
- * @return @c true only if exactly one byte could be read from @a c and be
- *         written to @a dst.
- *
- * @note Does nothing and returns @c false if either of @a c or @a dst is
- *       @c NULL, or if @a c has no readable byte.
- */
-ah_inline bool ah_bufc_peek_1(ah_bufc_t* c, uint8_t* dst)
-{
-    if (c == NULL || c->r == c->w || dst == NULL) {
-        return false;
-    }
-    *dst = c->r[0u];
     return true;
 }
 
@@ -384,7 +340,7 @@ ah_inline bool ah_bufc_peek_1(ah_bufc_t* c, uint8_t* dst)
  * @note Does nothing and returns @c false if either of @a src or @a dst is
  *       @c NULL, or if @a c has less than @a n readable bytes.
  */
-ah_inline bool ah_bufc_peek_n(ah_bufc_t* c, uint8_t* dst, size_t n)
+ah_inline bool ah_bufc_peek(ah_bufc_t* c, uint8_t* dst, size_t n)
 {
     if (c == NULL || (size_t) (c->w - c->r) < n || dst == NULL) {
         return false;
@@ -394,26 +350,128 @@ ah_inline bool ah_bufc_peek_n(ah_bufc_t* c, uint8_t* dst, size_t n)
 }
 
 /**
- * Reads one byte from @a c, writes it to @a dst and advances the read pointer
- * of @a c one byte.
+ * Reads and returns one byte from @a c without advancing its read pointer.
  *
- * @param[in,out] c   Pointer to source cursor.
- * @param[out]    dst Pointer to byte receiver.
+ * @param[in] c Pointer to cursor.
  *
- * @return @c true only if exactly one byte could be read from @a c and be
- *         written to @a dst.
+ * @return Read byte, or @c 0u if there is nothing left to read.
  *
- * @note Does nothing and returns @c false if @a c is @c NULL or @a c has no
- *       more readable bytes.
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
  */
-ah_inline bool ah_bufc_read_1(ah_bufc_t* c, uint8_t* dst)
+ah_inline uint8_t ah_bufc_peek_u8(ah_bufc_t* c)
 {
-    if (c == NULL || c->r == c->w || dst == NULL) {
-        return false;
+    if (c == NULL || c->r == c->w) {
+        return 0u;
     }
-    *dst = c->r[0u];
-    c->r = &c->r[1u];
-    return true;
+    return *c->r;
+}
+
+/**
+ * Reads and returns a big endian integer from @a c without advancing its read
+ * pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint16_t ah_bufc_peek_u16_be(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint16_t)) {
+        return 0u;
+    }
+    return ah_from_be_u16(*((uint16_t*) c->r));
+}
+
+/**
+ * Reads and returns a little endian integer from @a c without advancing its
+ * read pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint16_t ah_bufc_peek_u16_le(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint16_t)) {
+        return 0u;
+    }
+    return ah_from_le_u16(*((uint16_t*) c->r));
+}
+
+/**
+ * Reads and returns a big endian integer from @a c without advancing its read
+ * pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint32_t ah_bufc_peek_u32_be(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint32_t)) {
+        return 0u;
+    }
+    return ah_from_be_u32(*((uint32_t*) c->r));
+}
+
+/**
+ * Reads and returns a little endian integer from @a c without advancing its
+ * read pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint32_t ah_bufc_peek_u32_le(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint32_t)) {
+        return 0u;
+    }
+    return ah_from_le_u32(*((uint32_t*) c->r));
+}
+
+/**
+ * Reads and returns a big endian integer from @a c without advancing its read
+ * pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint64_t ah_bufc_peek_u64_be(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint64_t)) {
+        return 0u;
+    }
+    return ah_from_be_u64(*((uint64_t*) c->r));
+}
+
+/**
+ * Reads and returns a little endian integer from @a c without advancing its
+ * read pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint64_t ah_bufc_peek_u64_le(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint64_t)) {
+        return 0u;
+    }
+    return ah_from_le_u64(*((uint64_t*) c->r));
 }
 
 /**
@@ -431,7 +489,7 @@ ah_inline bool ah_bufc_read_1(ah_bufc_t* c, uint8_t* dst)
  * @note Does nothing and returns @c false if either of @a c or @a dst is
  *       @c NULL, or if less than @a n bytes can be read from @a c.
  */
-ah_inline bool ah_bufc_read_n(ah_bufc_t* c, uint8_t* dst, size_t n)
+ah_inline bool ah_bufc_read(ah_bufc_t* c, uint8_t* dst, size_t n)
 {
     if (c == NULL || (size_t) (c->w - c->r) < n || dst == NULL) {
         return false;
@@ -442,27 +500,148 @@ ah_inline bool ah_bufc_read_n(ah_bufc_t* c, uint8_t* dst, size_t n)
 }
 
 /**
- * Advances the read pointer of @a c one byte.
+ * Reads one byte from @a c, writes it to @a dst and advances the read pointer
+ * of @a c one byte.
  *
- * @param[in,out] c Pointer to cursor.
+ * @param[in,out] c   Pointer to source cursor.
+ * @param[out]    dst Pointer to byte receiver.
  *
- * @return @c true only if exactly one byte could be read and discarded from
- *         @a c.
+ * @return @c true only if exactly one byte could be read from @a c and be
+ *         written to @a dst.
  *
- * @note Does nothing and returns @c false if @a src is @c NULL, or if @a c
- *       has no more readable bytes.
+ * @note Does nothing and returns @c false if @a c is @c NULL or @a c has no
+ *       more readable bytes.
  */
-ah_inline bool ah_bufc_skip_1(ah_bufc_t* c)
+ah_inline uint8_t ah_bufc_read_u8(ah_bufc_t* c)
 {
     if (c == NULL || c->r == c->w) {
-        return false;
+        return 0u;
     }
-    c->r = &c->r[1u];
-    return true;
+    return *c->r++;
 }
 
 /**
- * Advances the read pointer of @a c @a n bytes.
+ * Reads and returns a little endian integer from @a c and advances its read
+ * pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint16_t ah_bufc_read_u16_be(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint16_t)) {
+        return 0u;
+    }
+    uint16_t u = *((uint16_t*) c->r);
+    c->r += sizeof(uint16_t);
+    return ah_from_be_u16(u);
+}
+
+/**
+ * Reads and returns a little endian integer from @a c and advances its read
+ * pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint16_t ah_bufc_read_u16_le(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint16_t)) {
+        return 0u;
+    }
+    uint16_t u = *((uint16_t*) c->r);
+    c->r += sizeof(uint16_t);
+    return ah_from_le_u16(u);
+}
+
+/**
+ * Reads and returns a little endian integer from @a c and advances its read
+ * pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint32_t ah_bufc_read_u32_be(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint32_t)) {
+        return 0u;
+    }
+    uint32_t u = *((uint32_t*) c->r);
+    c->r += sizeof(uint32_t);
+    return ah_from_be_u32(u);
+}
+
+/**
+ * Reads and returns a little endian integer from @a c and advances its read
+ * pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint32_t ah_bufc_read_u32_le(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint32_t)) {
+        return 0u;
+    }
+    uint32_t u = *((uint32_t*) c->r);
+    c->r += sizeof(uint32_t);
+    return ah_from_le_u32(u);
+}
+
+/**
+ * Reads and returns a little endian integer from @a c and advances its read
+ * pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint64_t ah_bufc_read_u64_be(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint64_t)) {
+        return 0u;
+    }
+    uint64_t u = *((uint64_t*) c->r);
+    c->r += sizeof(uint64_t);
+    return ah_from_be_u64(u);
+}
+
+/**
+ * Reads and returns a little endian integer from @a c and advances its read
+ * pointer.
+ *
+ * @param[in] c Pointer to cursor.
+ *
+ * @return Read integer, or @c 0u if there are not enough bytes left to read.
+ *
+ * @note Does nothing and returns @c 0u if @a c is @c NULL.
+ */
+ah_inline uint64_t ah_bufc_read_u64_le(ah_bufc_t* c)
+{
+    if (c == NULL || (size_t) (c->w - c->r) < sizeof(uint64_t)) {
+        return 0u;
+    }
+    uint64_t u = *((uint64_t*) c->r);
+    c->r += sizeof(uint64_t);
+    return ah_from_le_u32(u);
+}
+
+/**
+ * Advances the read pointer of @a c @a n bytes without reading them.
  *
  * @param[in,out] c Pointer to cursor.
  * @param[in]     n Number of bytes to skip.
@@ -473,7 +652,7 @@ ah_inline bool ah_bufc_skip_1(ah_bufc_t* c)
  * @note Does nothing and returns @c false if @a c is @c NULL or if @a n is
  *       larger than the number of readable bytes in @a c.
  */
-ah_inline bool ah_bufc_skip_n(ah_bufc_t* c, size_t n)
+ah_inline bool ah_bufc_skip(ah_bufc_t* c, size_t n)
 {
     if (c == NULL || (size_t) (c->w - c->r) < n) {
         return false;
@@ -498,23 +677,27 @@ ah_inline void ah_bufc_skip_all(ah_bufc_t* c)
 }
 
 /**
- * Writes @a u to @a c and advances its write pointer one byte.
+ * Writes @a n bytes from @a src to @a c and advances its write pointer @a n
+ * bytes.
  *
- * @param[in,out] c Pointer to destination cursor.
- * @param[in]     u Byte to write.
+ * @param[in,out] c   Pointer to destination cursor.
+ * @param[in]     src Pointer to beginning of memory chunk that contains the
+ *                    bytes that are to be written to @a c.
+ * @param[in] n       Number of bytes to write.
  *
- * @return @c true only if @a u could be written to @a c.
+ * @return @c true only if @a n bytes from @a src could be written to @a c.
  *
- * @note Does nothing and returns @c false if @a c is @c NULL or if @a c has
- *       no more writable bytes.
+ * @note Does nothing and returns @c false if either of @a c or @a src is
+ *       @c NULL, or if @a n is larger than the number of writable bytes in
+ *       @a c.
  */
-ah_inline bool ah_bufc_write_1(ah_bufc_t* c, uint8_t u)
+ah_inline bool ah_bufc_write(ah_bufc_t* c, uint8_t* src, size_t n)
 {
-    if (c == NULL || c->w == c->e) {
+    if (c == NULL || (src == NULL && n > 0u) || (size_t) (c->e - c->w) < n) {
         return false;
     }
-    c->w[0u] = u;
-    c->w = &c->w[1u];
+    memmove(c->w, src, n);
+    c->w = &c->w[n];
     return true;
 }
 
@@ -562,27 +745,151 @@ ah_inline bool ah_bufc_write_fmt(ah_bufc_t* c, const char* fmt, ...)
 }
 
 /**
- * Writes @a n bytes from @a src to @a c and advances its write pointer @a n
- * bytes.
+ * Writes @a u to @a c and advances its write pointer one byte.
  *
- * @param[in,out] c   Pointer to destination cursor.
- * @param[in]     src Pointer to beginning of memory chunk that contains the
- *                    bytes that are to be written to @a c.
- * @param[in] n       Number of bytes to write.
+ * @param[in,out] c Pointer to destination cursor.
+ * @param[in]     u Byte to write.
  *
- * @return @c true only if @a n bytes from @a src could be written to @a c.
+ * @return @c true only if @a u could be written to @a c.
  *
- * @note Does nothing and returns @c false if either of @a c or @a src is
- *       @c NULL, or if @a n is larger than the number of writable bytes in
- *       @a c.
+ * @note Does nothing and returns @c false if @a c is @c NULL or if @a c has
+ *       no more writable bytes.
  */
-ah_inline bool ah_bufc_write_n(ah_bufc_t* c, uint8_t* src, size_t n)
+ah_inline bool ah_bufc_write_u8(ah_bufc_t* c, uint8_t u)
 {
-    if (c == NULL || (src == NULL && n > 0u) || (size_t) (c->e - c->w) < n) {
+    if (c == NULL || c->w == c->e) {
         return false;
     }
-    memmove(c->w, src, n);
-    c->w = &c->w[n];
+    *c->w++ = u;
+    return true;
+}
+
+/**
+ * Writes @a u to @a c as a big endian integer and advances its write pointer.
+ *
+ * @param[in,out] c Pointer to destination cursor.
+ * @param[in]     u Integer to write.
+ *
+ * @return @c true only if @a u could be written to @a c.
+ *
+ * @note Does nothing and returns @c false if @a c is @c NULL or if @a c has
+ *       no more writable bytes.
+ */
+ah_inline bool ah_bufc_write_u16_be(ah_bufc_t* c, uint16_t u)
+{
+    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint16_t)) {
+        return false;
+    }
+    *((uint16_t *)c->w) = ah_to_be_u16(u);
+    c->w = &c->w[sizeof(uint16_t)];
+    return true;
+}
+
+/**
+ * Writes @a u to @a c as a little endian integer and advances its write
+ * pointer.
+ *
+ * @param[in,out] c Pointer to destination cursor.
+ * @param[in]     u Integer to write.
+ *
+ * @return @c true only if @a u could be written to @a c.
+ *
+ * @note Does nothing and returns @c false if @a c is @c NULL or if @a c has
+ *       no more writable bytes.
+ */
+ah_inline bool ah_bufc_write_u16_le(ah_bufc_t* c, uint16_t u)
+{
+    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint16_t)) {
+        return false;
+    }
+    *((uint16_t *)c->w) = ah_to_le_u16(u);
+    c->w = &c->w[sizeof(uint16_t)];
+    return true;
+}
+
+/**
+ * Writes @a u to @a c as a big endian integer and advances its write pointer.
+ *
+ * @param[in,out] c Pointer to destination cursor.
+ * @param[in]     u Integer to write.
+ *
+ * @return @c true only if @a u could be written to @a c.
+ *
+ * @note Does nothing and returns @c false if @a c is @c NULL or if @a c has
+ *       no more writable bytes.
+ */
+ah_inline bool ah_bufc_write_u32_be(ah_bufc_t* c, uint32_t u)
+{
+    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint32_t)) {
+        return false;
+    }
+    *((uint32_t *)c->w) = ah_to_be_u32(u);
+    c->w = &c->w[sizeof(uint32_t)];
+    return true;
+}
+
+/**
+ * Writes @a u to @a c as a little endian integer and advances its write
+ * pointer.
+ *
+ * @param[in,out] c Pointer to destination cursor.
+ * @param[in]     u Integer to write.
+ *
+ * @return @c true only if @a u could be written to @a c.
+ *
+ * @note Does nothing and returns @c false if @a c is @c NULL or if @a c has
+ *       no more writable bytes.
+ */
+ah_inline bool ah_bufc_write_u32_le(ah_bufc_t* c, uint32_t u)
+{
+    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint32_t)) {
+        return false;
+    }
+    *((uint32_t *)c->w) = ah_to_le_u32(u);
+    c->w = &c->w[sizeof(uint32_t)];
+    return true;
+}
+
+/**
+ * Writes @a u to @a c as a big endian integer and advances its write pointer.
+ *
+ * @param[in,out] c Pointer to destination cursor.
+ * @param[in]     u Integer to write.
+ *
+ * @return @c true only if @a u could be written to @a c.
+ *
+ * @note Does nothing and returns @c false if @a c is @c NULL or if @a c has
+ *       no more writable bytes.
+ */
+ah_inline bool ah_bufc_write_u64_be(ah_bufc_t* c, uint64_t u)
+{
+    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint64_t)) {
+        return false;
+    }
+    *((uint64_t *)c->w) = ah_to_be_u64(u);
+    c->w = &c->w[sizeof(uint64_t)];
+    return true;
+}
+
+/**
+ * Writes @a u to @a c as a little endian integer and advances its write
+ * pointer.
+ *
+ * @param[in,out] c Pointer to destination cursor.
+ * @param[in]     u Integer to write.
+ *
+ * @return @c true only if @a u could be written to @a c.
+ *
+ * @note Does nothing and returns @c false if @a c is @c NULL or if @a c has
+ *       no more writable bytes.
+ */
+ah_inline bool ah_bufc_write_u64_le(ah_bufc_t* c, uint64_t u)
+{
+    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint64_t)) {
+        return false;
+    }
+    *((uint64_t *)c->w) = ah_to_le_u64(u);
+    c->w = &c->w[sizeof(uint64_t)];
     return true;
 }
 
