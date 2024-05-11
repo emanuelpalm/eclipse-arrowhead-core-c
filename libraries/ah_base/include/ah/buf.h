@@ -48,17 +48,17 @@
  *   <li>The @c r pointer must be less than or equal to @c w.
  *   <li>The @c w pointer must be less than or equal to @c e.
  *   <li>All of @c r, @c w and @c e must point into or to the first byte right
- *       after the same contiguous region of buffer memory.
+ *       after the same contiguous region of memory.
  * </ol>
  *
- * The most straightforward way to ensure that the invariants remain true for a
- * given buffer cursor instance is to initialize and update it only through the
- * functions for handling such cursors available in this library.
+ * The most straightforward way to ensure that these invariants remain true for
+ * a given cursor is to initialize and update it only through the functions for
+ * handling cursors available in this library.
  */
 struct ah_bufc {
     uint8_t* r; ///< Points to next unread byte.
     uint8_t* w; ///< Points to next unwritten byte.
-    uint8_t* e; ///< Points to first byte outside of the cursor's memory chunk.
+    uint8_t* e; ///< Points to first byte outside of the cursor's memory buffer.
 };
 
 /**
@@ -683,7 +683,7 @@ ah_inline void ah_bufc_skip_all(ah_bufc_t* c)
  * @param[in,out] c   Pointer to destination cursor.
  * @param[in]     src Pointer to beginning of memory chunk that contains the
  *                    bytes that are to be written to @a c.
- * @param[in] n       Number of bytes to write.
+ * @param[in]     n   Number of bytes to write.
  *
  * @return @c true only if @a n bytes from @a src could be written to @a c.
  *
