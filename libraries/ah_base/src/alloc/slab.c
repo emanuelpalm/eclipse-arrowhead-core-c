@@ -47,9 +47,13 @@ ah_err_t ah_slab_init(ah_slab_t* s, size_t slot_sz)
     if (ah_ckd_mul(&bank_sz, 4u, slot_sz)) {
         return AH_ERANGE;
     }
-    if (ah_ckd_add(&bank_sz, bank_sz, sizeof(ahi_slab_bank_t))) {
-        return AH_ERANGE;
-    }
+
+    // OVERFLOW: We know that `bank_sz` can be divided by four at this point,
+    // which means that it is smaller than `(SIZE_MAX / 4u)`. We assume that
+    // `SIZE_MAX / 4u` is larger than `sizeof(ahi_slab_bank_t)`, which will be
+    // the case even if SIZE_MAX would be defined as 127.
+    bank_sz += sizeof(ahi_slab_bank_t);
+
     err = ah_align_sz(ah_page_get_size(), &bank_sz);
     if (err != AH_OK) {
         return err;

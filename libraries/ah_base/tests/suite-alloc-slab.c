@@ -25,9 +25,27 @@ AH_UNIT_SUITE(alloc_slab)
             AH_UNIT_EQ_ERR(AH_EINVAL, err);
         }
 
-        AH_UNIT_CASE("`slot_sz` being too large causes an overflow.")
+        AH_UNIT_CASE("`slot_sz` being too large causes slot size overflow.")
         {
             err = ah_slab_init(&s, SIZE_MAX);
+            AH_UNIT_EQ_ERR(AH_ERANGE, err);
+        }
+
+        AH_UNIT_CASE("`slot_sz` being too large causes slot alignment failure.")
+        {
+            err = ah_slab_init(&s, SIZE_MAX - sizeof(intptr_t));
+            AH_UNIT_EQ_ERR(AH_ERANGE, err);
+        }
+
+        AH_UNIT_CASE("`slot_sz` being too large causes bank size overflow.")
+        {
+            err = ah_slab_init(&s, SIZE_MAX / 4u);
+            AH_UNIT_EQ_ERR(AH_ERANGE, err);
+        }
+
+        AH_UNIT_CASE("`slot_sz` being too large causes bank alignment failure.")
+        {
+            err = ah_slab_init(&s, SIZE_MAX / 4u - sizeof(intptr_t) * 2u);
             AH_UNIT_EQ_ERR(AH_ERANGE, err);
         }
     }
@@ -77,6 +95,8 @@ AH_UNIT_SUITE(alloc_slab)
             AH_UNIT_EQ_UHEX(0u, ((uintptr_t) a1) & (sizeof(intptr_t) - 1u));
             AH_UNIT_EQ_UHEX(0u, ((uintptr_t) a2) & (sizeof(intptr_t) - 1u));
             AH_UNIT_EQ_UHEX(0u, ((uintptr_t) a3) & (sizeof(intptr_t) - 1u));
+
+            ah_slab_term(&s, NULL);
         }
     }
 
@@ -94,6 +114,8 @@ AH_UNIT_SUITE(alloc_slab)
             if (AH_UNIT_EQ_ERR(AH_OK, err)) {
                 ah_slab_free(&s, NULL);
                 // Nothing to check.
+
+                ah_slab_term(&s, NULL);
             }
         }
     }
