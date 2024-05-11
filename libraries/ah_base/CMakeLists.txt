@@ -64,6 +64,7 @@ set(
     tests/suite-alloc-bump.c
     tests/suite-alloc-page.c
     tests/suite-alloc-slab.c
+    tests/suite-bit.c
     tests/suite-buf.c
     tests/suite-bufc-copy.c
     tests/suite-bufc-peek.c

@@ -15,6 +15,21 @@
  */
 
 /**
+ * Constant representing the big endian byte order.
+ */
+#define AH_ENDIAN_BIG AHI_ENDIAN_BIG
+
+/**
+ * Constant representing the little endian byte order.
+ */
+#define AH_ENDIAN_LITTLE AHI_ENDIAN_LITTLE
+
+/**
+ * Constant representing the platform, or @a native, byte order.
+ */
+#define AH_ENDIAN_NATIVE AHI_ENDIAN_NATIVE
+
+/**
  * Reverses the order of the bytes in @a u.
  *
  * @param u Integer to swap.
@@ -65,7 +80,7 @@ ah_inline uint16_t ah_from_be_u16(uint16_t u) {
  *
  * @return Platform byte order variant of @a u.
  */
-ah_inline uint16_t ah_from_be_u32(uint32_t u) {
+ah_inline uint32_t ah_from_be_u32(uint32_t u) {
     return ahi_from_be_u32(u);
 }
 
@@ -76,7 +91,7 @@ ah_inline uint16_t ah_from_be_u32(uint32_t u) {
  *
  * @return Platform byte order variant of @a u.
  */
-ah_inline uint16_t ah_from_be_u64(uint64_t u) {
+ah_inline uint64_t ah_from_be_u64(uint64_t u) {
     return ahi_from_be_u64(u);
 }
 
@@ -98,7 +113,7 @@ ah_inline uint16_t ah_from_le_u16(uint16_t u) {
  *
  * @return Platform byte order variant of @a u.
  */
-ah_inline uint16_t ah_from_le_u32(uint32_t u) {
+ah_inline uint32_t ah_from_le_u32(uint32_t u) {
     return ahi_from_le_u32(u);
 }
 
@@ -109,7 +124,7 @@ ah_inline uint16_t ah_from_le_u32(uint32_t u) {
  *
  * @return Platform byte order variant of @a u.
  */
-ah_inline uint16_t ah_from_le_u64(uint64_t u) {
+ah_inline uint64_t ah_from_le_u64(uint64_t u) {
     return ahi_from_le_u64(u);
 }
 
@@ -131,7 +146,7 @@ ah_inline uint16_t ah_to_be_u16(uint16_t u) {
  *
  * @return Big endian byte order variant of @a u.
  */
-ah_inline uint16_t ah_to_be_u32(uint32_t u) {
+ah_inline uint32_t ah_to_be_u32(uint32_t u) {
     return ahi_to_be_u32(u);
 }
 
@@ -142,7 +157,7 @@ ah_inline uint16_t ah_to_be_u32(uint32_t u) {
  *
  * @return Big endian byte order variant of @a u.
  */
-ah_inline uint16_t ah_to_be_u64(uint64_t u) {
+ah_inline uint64_t ah_to_be_u64(uint64_t u) {
     return ahi_to_be_u64(u);
 }
 
@@ -164,7 +179,7 @@ ah_inline uint16_t ah_to_le_u16(uint16_t u) {
  *
  * @return Little endian byte order variant of @a u.
  */
-ah_inline uint16_t ah_to_le_u32(uint32_t u) {
+ah_inline uint32_t ah_to_le_u32(uint32_t u) {
     return ahi_to_le_u32(u);
 }
 
@@ -175,7 +190,7 @@ ah_inline uint16_t ah_to_le_u32(uint32_t u) {
  *
  * @return Little endian byte order variant of @a u.
  */
-ah_inline uint16_t ah_to_le_u64(uint64_t u) {
+ah_inline uint64_t ah_to_le_u64(uint64_t u) {
     return ahi_to_le_u64(u);
 }
 
