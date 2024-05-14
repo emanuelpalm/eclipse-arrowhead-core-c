@@ -637,7 +637,7 @@ ah_inline uint64_t ah_bufc_read_u64_le(ah_bufc_t* c)
     }
     uint64_t u = *((uint64_t*) c->r);
     c->r += sizeof(uint64_t);
-    return ah_from_le_u32(u);
+    return ah_from_le_u64(u);
 }
 
 /**

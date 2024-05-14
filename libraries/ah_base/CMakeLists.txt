@@ -68,6 +68,7 @@ set(
     tests/suite-buf.c
     tests/suite-bufc-copy.c
     tests/suite-bufc-peek.c
+    tests/suite-bufc-read.c
     tests/suite-bufc.c
     tests/suite-ckdint.c
     tests/suite-def.c

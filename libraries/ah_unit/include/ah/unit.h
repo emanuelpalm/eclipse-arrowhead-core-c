@@ -48,6 +48,9 @@
 #define AH_UNIT_GE_UHEX(lesser, greater) \
     ahi_unit_ge_uhex(_ahi_usr_test_ctx, AHI_UNIT_LOC, (lesser), (greater))
 
+#define AH_UNIT_GE_UINT(lesser, greater) \
+    ahi_unit_ge_uint(_ahi_usr_test_ctx, AHI_UNIT_LOC, (lesser), (greater))
+
 #define AH_UNIT_GT_UHEX(lesser, greater) \
     ahi_unit_gt_uhex(_ahi_usr_test_ctx, AHI_UNIT_LOC, (lesser), (greater))
 

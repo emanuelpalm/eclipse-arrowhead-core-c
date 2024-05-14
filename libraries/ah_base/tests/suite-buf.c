@@ -108,7 +108,6 @@ AH_UNIT_SUITE(buf)
         AH_UNIT_EQ_PTR(NULL, ah_buf_get_base(NULL));
     }
 
-
     AH_UNIT_TEST("ah_buf_get_base() returns unmodified base pointer.")
     {
         err = ah_buf_init(&b, buffer, sizeof(buffer));

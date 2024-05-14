@@ -61,6 +61,7 @@ bool ahi_unit_eq_str(ahi_unit_t* u, ahi_unit_loc_t l, const char* a, const char*
 bool ahi_unit_eq_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
 bool ahi_unit_eq_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
 bool ahi_unit_ge_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
+bool ahi_unit_ge_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
 bool ahi_unit_gt_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
 bool ahi_unit_ne_ptr(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b);
 bool ahi_unit_ne_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);

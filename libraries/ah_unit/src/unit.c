@@ -158,7 +158,7 @@ bool ahi_unit_eq_ptr(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b)
         return true;
     }
 
-    const char* fmt = "Expecting %p; received %p.\n\n";
+    const char* fmt = "Expected %p; received %p.\n\n";
     ahi_report_err(u, l, fmt, a, b);
 
     return false;
@@ -207,6 +207,18 @@ bool ahi_unit_ge_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
     }
 
     const char* fmt = "Expected: %" PRIxMAX " >= %" PRIxMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, a);
+
+    return false;
+}
+
+bool ahi_unit_ge_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
+{
+    if (a >= b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIuMAX " >= %" PRIuMAX "\n\n";
     ahi_report_err(u, l, fmt, a, a);
 
     return false;
