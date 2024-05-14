@@ -143,13 +143,13 @@ ah_inline bool ah_time_is_before(ah_time_t a, ah_time_t b)
 }
 
 /**
- * Checks if @a time is the zero time.
+ * Checks if @a t is the zero time.
  *
  * @param time Time.
- * @return @c true only if @a time is zeroed.
+ * @return @c true only if @a t is zeroed.
  *
- * @note The zero time can be produced by setting the memory of an ah_time_t
- * instance to all zeroes, or by using the AH_TIME_ZERO macro.
+ * @note The zero time can be produced by setting the memory of an @c ah_time_t
+ * instance to all zeroes, or by using the @c AH_TIME_ZERO macro.
  */
 ah_inline bool ah_time_is_zero(ah_time_t t)
 {
