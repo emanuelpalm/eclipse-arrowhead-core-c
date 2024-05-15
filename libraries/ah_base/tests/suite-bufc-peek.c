@@ -43,7 +43,7 @@ AH_UNIT_SUITE(bufc_peek)
         AH_UNIT_EQ_STR(src_buffer, (char*) dst_buffer);
     }
 
-    AH_UNIT_TEST("ah_bufc_peek_*() return 0u if `c` is NULL.")
+    AH_UNIT_TEST("ah_bufc_peek_u*() return 0u if `c` is NULL.")
     {
         AH_UNIT_EQ_UINT(0u, ah_bufc_peek_u8(NULL));
         AH_UNIT_EQ_UINT(0u, ah_bufc_peek_u16_be(NULL));
@@ -54,7 +54,7 @@ AH_UNIT_SUITE(bufc_peek)
         AH_UNIT_EQ_UINT(0u, ah_bufc_peek_u64_le(NULL));
     }
 
-    AH_UNIT_TEST("ah_bufc_peek_*() return 0u if `c` is close to end.")
+    AH_UNIT_TEST("ah_bufc_peek_u*() return 0u if `c` is close to end.")
     {
         uint8_t* buffer = (uint8_t*) "01234567";
         ah_bufc_t c;
@@ -75,7 +75,7 @@ AH_UNIT_SUITE(bufc_peek)
         AH_UNIT_EQ_UINT(0u, ah_bufc_peek_u64_le(&c));
     }
 
-    AH_UNIT_TEST("ah_bufc_peek_*() returns expected bytes.")
+    AH_UNIT_TEST("ah_bufc_peek_u*() returns expected words.")
     {
         const char* buffer = "\x30\x31\x32\x33\x34\x35\x36\x37"
                              "\x38\x39\x3A\x3B\x3C\x3D\x3E\x3F";
@@ -134,21 +134,35 @@ AH_UNIT_SUITE(bufc_peek)
         AH_UNIT_CASE("ah_bufc_peek_u64_be()")
         {
             c = ah_bufc_from_readable(buffer, strlen(buffer));
-            AH_UNIT_EQ_UHEX(ah_to_be_u64(0x3736353433323130), ah_bufc_peek_u64_be(&c));
+            uint64_t expected;
+
+            expected = ah_to_be_u64(0x3736353433323130);
+            AH_UNIT_EQ_UHEX(expected, ah_bufc_peek_u64_be(&c));
             AH_UNIT_EQ_BOOL(true, ah_bufc_skip(&c, 3));
-            AH_UNIT_EQ_UHEX(ah_to_be_u64(0x3A39383736353433), ah_bufc_peek_u64_be(&c));
+
+            expected = ah_to_be_u64(0x3A39383736353433);
+            AH_UNIT_EQ_UHEX(expected,ah_bufc_peek_u64_be(&c));
             AH_UNIT_EQ_BOOL(true, ah_bufc_skip(&c, 5));
-            AH_UNIT_EQ_UHEX(ah_to_be_u64(0x3F3E3D3C3B3A3938), ah_bufc_peek_u64_be(&c));
+
+            expected = ah_to_be_u64(0x3F3E3D3C3B3A3938);
+            AH_UNIT_EQ_UHEX(expected, ah_bufc_peek_u64_be(&c));
         }
 
         AH_UNIT_CASE("ah_bufc_peek_u64_le()")
         {
             c = ah_bufc_from_readable(buffer, strlen(buffer));
-            AH_UNIT_EQ_UHEX(ah_to_le_u64(0x3736353433323130), ah_bufc_peek_u64_le(&c));
+            uint64_t expected;
+
+            expected = ah_to_le_u64(0x3736353433323130);
+            AH_UNIT_EQ_UHEX(expected, ah_bufc_peek_u64_le(&c));
             AH_UNIT_EQ_BOOL(true, ah_bufc_skip(&c, 3));
-            AH_UNIT_EQ_UHEX(ah_to_le_u64(0x3A39383736353433), ah_bufc_peek_u64_le(&c));
+
+            expected = ah_to_le_u64(0x3A39383736353433);
+            AH_UNIT_EQ_UHEX(expected,ah_bufc_peek_u64_le(&c));
             AH_UNIT_EQ_BOOL(true, ah_bufc_skip(&c, 5));
-            AH_UNIT_EQ_UHEX(ah_to_le_u64(0x3F3E3D3C3B3A3938), ah_bufc_peek_u64_le(&c));
+
+            expected = ah_to_le_u64(0x3F3E3D3C3B3A3938);
+            AH_UNIT_EQ_UHEX(expected, ah_bufc_peek_u64_le(&c));
         }
     }
 }
