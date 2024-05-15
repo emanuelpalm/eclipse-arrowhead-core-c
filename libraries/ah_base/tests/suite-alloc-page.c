@@ -14,7 +14,7 @@ AH_UNIT_SUITE(alloc_page)
 
     AH_UNIT_TEST("ah_page_alloc() with a smaller argument returns non-NULL.")
     {
-        size_t sz = ah_page_get_size();//63u;
+        size_t sz = 63u;
 
         void* a0 = ah_page_alloc(sz);
         AH_UNIT_NE_PTR(NULL, a0);
