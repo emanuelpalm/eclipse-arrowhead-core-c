@@ -70,6 +70,7 @@ set(
     tests/suite-bufc-peek.c
     tests/suite-bufc-read.c
     tests/suite-bufc-skip.c
+    tests/suite-bufc-write.c
     tests/suite-bufc.c
     tests/suite-ckdint.c
     tests/suite-def.c

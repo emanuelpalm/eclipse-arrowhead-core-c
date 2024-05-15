@@ -691,7 +691,7 @@ ah_inline void ah_bufc_skip_all(ah_bufc_t* c)
  *       @c NULL, or if @a n is larger than the number of writable bytes in
  *       @a c.
  */
-ah_inline bool ah_bufc_write(ah_bufc_t* c, uint8_t* src, size_t n)
+ah_inline bool ah_bufc_write(ah_bufc_t* c, const uint8_t* src, size_t n)
 {
     if (c == NULL || (src == NULL && n > 0u) || (size_t) (c->e - c->w) < n) {
         return false;
@@ -777,7 +777,7 @@ ah_inline bool ah_bufc_write_u8(ah_bufc_t* c, uint8_t u)
  */
 ah_inline bool ah_bufc_write_u16_be(ah_bufc_t* c, uint16_t u)
 {
-    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint16_t)) {
+    if (c == NULL || (size_t) (c->e - c->w) < sizeof(uint16_t)) {
         return false;
     }
     *((uint16_t *)c->w) = ah_to_be_u16(u);
@@ -799,7 +799,7 @@ ah_inline bool ah_bufc_write_u16_be(ah_bufc_t* c, uint16_t u)
  */
 ah_inline bool ah_bufc_write_u16_le(ah_bufc_t* c, uint16_t u)
 {
-    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint16_t)) {
+    if (c == NULL || (size_t) (c->e - c->w) < sizeof(uint16_t)) {
         return false;
     }
     *((uint16_t *)c->w) = ah_to_le_u16(u);
@@ -820,7 +820,7 @@ ah_inline bool ah_bufc_write_u16_le(ah_bufc_t* c, uint16_t u)
  */
 ah_inline bool ah_bufc_write_u32_be(ah_bufc_t* c, uint32_t u)
 {
-    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint32_t)) {
+    if (c == NULL || (size_t) (c->e - c->w) < sizeof(uint32_t)) {
         return false;
     }
     *((uint32_t *)c->w) = ah_to_be_u32(u);
@@ -842,7 +842,7 @@ ah_inline bool ah_bufc_write_u32_be(ah_bufc_t* c, uint32_t u)
  */
 ah_inline bool ah_bufc_write_u32_le(ah_bufc_t* c, uint32_t u)
 {
-    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint32_t)) {
+    if (c == NULL || (size_t) (c->e - c->w) < sizeof(uint32_t)) {
         return false;
     }
     *((uint32_t *)c->w) = ah_to_le_u32(u);
@@ -863,7 +863,7 @@ ah_inline bool ah_bufc_write_u32_le(ah_bufc_t* c, uint32_t u)
  */
 ah_inline bool ah_bufc_write_u64_be(ah_bufc_t* c, uint64_t u)
 {
-    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint64_t)) {
+    if (c == NULL || (size_t) (c->e - c->w) < sizeof(uint64_t)) {
         return false;
     }
     *((uint64_t *)c->w) = ah_to_be_u64(u);
@@ -885,7 +885,7 @@ ah_inline bool ah_bufc_write_u64_be(ah_bufc_t* c, uint64_t u)
  */
 ah_inline bool ah_bufc_write_u64_le(ah_bufc_t* c, uint64_t u)
 {
-    if (c == NULL || (size_t) (c->w - c->e) < sizeof(uint64_t)) {
+    if (c == NULL || (size_t) (c->e - c->w) < sizeof(uint64_t)) {
         return false;
     }
     *((uint64_t *)c->w) = ah_to_le_u64(u);
