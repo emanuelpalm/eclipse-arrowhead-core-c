@@ -16,6 +16,7 @@ int main(int argc, const char** argv)
     AH_UNIT_RUN_SUITE(bufc_copy);
     AH_UNIT_RUN_SUITE(bufc_peek);
     AH_UNIT_RUN_SUITE(bufc_read);
+    AH_UNIT_RUN_SUITE(bufc_skip);
     AH_UNIT_RUN_SUITE(ckdint);
     AH_UNIT_RUN_SUITE(def);
     AH_UNIT_RUN_SUITE(err);
