@@ -23,12 +23,18 @@
  */
 
 /**
- * A function definition following this attribute is inlined by the compiler.
+ * Instructs the compiler to inline the function following this attribute.
+ *
+ * This attribute is not guaranteed to be honored by all supported compilers,
+ * and may be ignored by the compilers that do honor it.
  */
 #define ah_inline ahi_inline
 
 /**
- * A declaration following this attribute may be unused.
+ * Instructs the compiler to ignore if the declaration following this attribute
+ * is unused.
+ *
+ * This attribute is not guaranteed to be honored by all supported compilers.
  */
 #define ah_unused ahi_unused
 
@@ -129,7 +135,7 @@
  * Various types exposed by the underlying platform. Unless otherwise is noted,
  * applications that are meant to work across multiple platforms should not
  * access the values or members of these types directly. Rather should the
- * functions provided by this library for dealing with these types be used.
+ * functions provided by this library be used for dealing with these types.
  *
  * @{
  */
