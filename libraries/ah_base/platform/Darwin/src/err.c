@@ -556,6 +556,12 @@ const char* ahp_err_get_s(ahp_err_t err)
 
         // Custom codes.
 
+    case AHP_ECLOCKRANGE:
+        return "ECLOCKRANGE";
+
+    case AHP_ECLOCKUNSET:
+        return "ECLOCKUNSET";
+
     case AHP_EDEP:
         return "EDEP";
 

@@ -19,15 +19,17 @@
 #define AHP_EBUSY           EBUSY
 #define AHP_ECANCELED       ECANCELED
 #define AHP_ECHILD          ECHILD
+#define AHP_ECLOCKRANGE     (ELAST + 1)
+#define AHP_ECLOCKUNSET     (ELAST + 2)
 #define AHP_ECONNABORTED    ECONNABORTED
 #define AHP_ECONNREFUSED    ECONNREFUSED
 #define AHP_ECONNRESET      ECONNRESET
 #define AHP_EDEADLK         EDEADLK
-#define AHP_EDEP            (ELAST + 1)
+#define AHP_EDEP            (ELAST + 3)
 #define AHP_EDESTADDRREQ    EDESTADDRREQ
 #define AHP_EDOM            EDOM
 #define AHP_EDQUOT          EDQUOT
-#define AHP_EEOF            (ELAST + 2)
+#define AHP_EEOF            (ELAST + 4)
 #define AHP_EEXIST          EEXIST
 #define AHP_EFAULT          EFAULT
 #define AHP_EFBIG           EFBIG
@@ -36,7 +38,7 @@
 #define AHP_EIDRM           EIDRM
 #define AHP_EILSEQ          EILSEQ
 #define AHP_EINPROGRESS     EINPROGRESS
-#define AHP_EINTERN         (ELAST + 3)
+#define AHP_EINTERN         (ELAST + 5)
 #define AHP_EINTR           EINTR
 #define AHP_EINVAL          EINVAL
 #define AHP_EIO             EIO
@@ -89,8 +91,8 @@
 #define AHP_ESPIPE          ESPIPE
 #define AHP_ESRCH           ESRCH
 #define AHP_ESTALE          ESTALE
-#define AHP_ESTATE          (ELAST + 4)
-#define AHP_ESYNTAX         (ELAST + 5)
+#define AHP_ESTATE          (ELAST + 6)
+#define AHP_ESYNTAX         (ELAST + 7)
 #define AHP_ETIME           ETIME
 #define AHP_ETIMEDOUT       ETIMEDOUT
 #define AHP_ETOOMANYREFS    ETOOMANYREFS

@@ -25,6 +25,8 @@ AH_UNIT_SUITE(err)
             { AH_EBUSY, "EBUSY" },
             { AH_ECANCELED, "ECANCELED" },
             { AH_ECHILD, "ECHILD" },
+            { AH_ECLOCKRANGE, "ECLOCKRANGE" },
+            { AH_ECLOCKUNSET, "ECLOCKUNSET" },
             { AH_ECONNABORTED, "ECONNABORTED" },
             { AH_ECONNREFUSED, "ECONNREFUSED" },
             { AH_ECONNRESET, "ECONNRESET" },

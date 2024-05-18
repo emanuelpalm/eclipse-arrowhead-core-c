@@ -47,6 +47,8 @@
 #define AH_EBUSY           AHP_EBUSY           ///< Device or resource busy.
 #define AH_ECANCELED       AHP_ECANCELED       ///< Operation canceled.
 #define AH_ECHILD          AHP_ECHILD          ///< No child processes.
+#define AH_ECLOCKRANGE     AHP_ECLOCKRANGE     ///< Clock time outside representable range.
+#define AH_ECLOCKUNSET     AHP_ECLOCKUNSET     ///< Clock time never set.
 #define AH_ECONNABORTED    AHP_ECONNABORTED    ///< Connection aborted.
 #define AH_ECONNREFUSED    AHP_ECONNREFUSED    ///< Connection refused.
 #define AH_ECONNRESET      AHP_ECONNRESET      ///< Connection reset.

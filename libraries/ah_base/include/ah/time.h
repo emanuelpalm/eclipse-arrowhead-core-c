@@ -164,4 +164,73 @@ ah_inline bool ah_time_is_zero(ah_time_t t)
     return ahp_time_is_zero(t);
 }
 
+/**
+ * Transforms given time @a t into the number of milliseconds since the Unix
+ * Epoch, which started at 1970-01-01 00:00:00 UTC.
+ *
+ * This function relies on either (A) the platform wall time being set correctly
+ * or (B) @c ah_epoch_set_ms() being called before it with a correct value.
+ * On platforms without a wall time that can be consulted, the second option
+ * becomes the only alternative.
+ *
+ * @param[in]  t   Time.
+ * @param[out] res Receiver of @a t converted to a millisecond Unix time.
+ *
+ * @retval AH_OK          if successful.
+ * @retval AH_EINVAL      if @a res is @c NULL.
+ * @retval AH_ERANGE      if @a t corresponds to a Unix time happening after
+ *                        approximately 584556019-04-03 14:25:52 UTC, which is
+ *                        the highest such time that can be expressed with an
+ *                        unsigned 64-bit integer.
+ * @retval AH_ECLOCKRANGE if @c ah_epoch_set_ms() has not yet been called,
+ *                        a platform wall time is available, and the number of
+ *                        milliseconds from the Unix Epoch to the moment the
+ *                        clock used to produce @a t started cannot be
+ *                        calculated and then expressed using unsigned 64-bit
+ *                        integers.
+ * @retval AH_ECLOCKUNSET if no platform wall time is available and
+ *                        @c ah_epoch_set_ms() has not yet been called.
+ */
+ah_inline ah_err_t ah_time_to_epoch_ms(ah_time_t t, uint64_t* res)
+{
+    return ahp_time_to_epoch_ms(t, res);
+}
+
+/**
+ * Gets the number of milliseconds that have elapsed since the Unix Epoch, which
+ * started at 1970-01-01 00:00:00 UTC.
+ *
+ * @param[out] res Receiver of the current millisecond Unix time.
+ *
+ * @retval AH_OK          if successful.
+ * @retval AH_EINVAL      if @a res is @c NULL.
+ * @retval AH_ECLOCKUNSET if no platform wall time is available and
+ *                        @c ah_epoch_set_ms() has not yet been called.
+ */
+ah_inline ah_err_t ah_epoch_get_ms(uint64_t* res)
+{
+    return ahp_epoch_get_ms(res);
+}
+
+/**
+ * Informs this time module about the number of milliseconds that have elapsed
+ * since the Unix Epoch, which started at 1970-01-01 00:00:00 UTC.
+ *
+ * The function updates the internal clock used by both @c ah_time_to_epoch_ms()
+ * and @c ah_epoch_get_ms(). It does not alter the platform wall time, if
+ * one is available.
+ *
+ * @param epoch_ms The number of milliseconds since the Unix Epoch.
+ *
+ * @retval AH_OK          if successful.
+ * @retval AH_ECLOCKRANGE if the time reported by @c ah_time_now(), converted to
+ *                        the number of milliseconds since its arbitrary
+ *                        starting point, minus @a epoch_ms caused an arithmetic
+ *                        underflow.
+ */
+ah_inline ah_err_t ah_epoch_set_ms(uint64_t epoch_ms)
+{
+    return ahp_epoch_set_ms(epoch_ms);
+}
+
 #endif
