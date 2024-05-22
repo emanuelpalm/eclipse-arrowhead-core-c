@@ -11,8 +11,7 @@
 
 #define AHI_EPOCH_BASE_MS_UNSET UINT64_MAX
 
-static ahp_err_t ahi_get_epoch_base_ms(mach_timebase_info_data_t* info,
-    uint64_t* epoch_base_ms);
+static ahp_err_t ahi_get_epoch_base_ms(mach_timebase_info_data_t* info, uint64_t* epoch_base_ms);
 static mach_timebase_info_data_t ahi_get_timebase_info(void);
 
 static int64_t ahi_mul_div_i64(int64_t a, int64_t b, int64_t c);
@@ -114,14 +113,12 @@ __attribute((cold)) ahp_err_t ahp_epoch_set_ms(uint64_t epoch_ms)
     return AHP_OK;
 }
 
-static __attribute((cold)) ahp_err_t ahi_get_epoch_base_ms(
-    mach_timebase_info_data_t* info, uint64_t* epoch_base_ms)
+static __attribute((cold)) ahp_err_t ahi_get_epoch_base_ms(mach_timebase_info_data_t* info,
+    uint64_t* epoch_base_ms)
 {
     struct timespec rt;
     if (clock_gettime(CLOCK_REALTIME, &rt) == -1) {
-        (void) fprintf(stderr,
-            "clock_gettime(CLOCK_REALTIME) failed; %s.",
-            strerror(errno));
+        (void) fprintf(stderr, "clock_gettime(CLOCK_REALTIME) failed; %s.", strerror(errno));
 
         abort();
     }
@@ -157,13 +154,13 @@ static mach_timebase_info_data_t ahi_get_timebase_info(void)
     abort();
 }
 
-#define IMPL_MUL_DIV(NAME, TYPE)                                               \
-    static TYPE NAME(TYPE a, TYPE b, TYPE c)                                   \
-    {                                                                          \
-        TYPE q = a / c;                                                        \
-        TYPE r = a % c;                                                        \
-        TYPE qb = q * b;                                                       \
-        return qb + r * b / c;                                                 \
+#define IMPL_MUL_DIV(NAME, TYPE)             \
+    static TYPE NAME(TYPE a, TYPE b, TYPE c) \
+    {                                        \
+        TYPE q = a / c;                      \
+        TYPE r = a % c;                      \
+        TYPE qb = q * b;                     \
+        return qb + r * b / c;               \
     }
 
 IMPL_MUL_DIV(ahi_mul_div_i64, int64_t)
