@@ -18,11 +18,9 @@
 #define AH_UNIT_SUITE(name) \
     void AHI_UNIT_SUITE_IDENT(name)(ah_unused ahi_unit_t * _ahi_usr_test_ctx)
 
-#define AH_UNIT_TEST(msg) \
-    if (ahi_unit_run_test(_ahi_usr_test_ctx, (msg)))
+#define AH_UNIT_TEST(msg) if (ahi_unit_run_test(_ahi_usr_test_ctx, (msg)))
 
-#define AH_UNIT_CASE(...) \
-    if (ahi_unit_run_case(_ahi_usr_test_ctx, __VA_ARGS__))
+#define AH_UNIT_CASE(...) if (ahi_unit_run_case(_ahi_usr_test_ctx, __VA_ARGS__))
 
 #define AH_UNIT_EQ_BOOL(expected, actual) \
     ahi_unit_eq_bool(_ahi_usr_test_ctx, AHI_UNIT_LOC, (expected), (actual))
@@ -32,6 +30,9 @@
 
 #define AH_UNIT_EQ_INT(expected, actual) \
     ahi_unit_eq_int(_ahi_usr_test_ctx, AHI_UNIT_LOC, (expected), (actual))
+
+#define AH_UNIT_EQ_MEM(expected, actual, sz) \
+    ahi_unit_eq_mem(_ahi_usr_test_ctx, AHI_UNIT_LOC, (expected), (actual), (sz))
 
 #define AH_UNIT_EQ_PTR(expected, actual) \
     ahi_unit_eq_ptr(_ahi_usr_test_ctx, AHI_UNIT_LOC, (expected), (actual))
@@ -51,8 +52,17 @@
 #define AH_UNIT_GE_UINT(lesser, greater) \
     ahi_unit_ge_uint(_ahi_usr_test_ctx, AHI_UNIT_LOC, (lesser), (greater))
 
+#define AH_UNIT_GT_INT(lesser, greater) \
+    ahi_unit_gt_int(_ahi_usr_test_ctx, AHI_UNIT_LOC, (lesser), (greater))
+
 #define AH_UNIT_GT_UHEX(lesser, greater) \
     ahi_unit_gt_uhex(_ahi_usr_test_ctx, AHI_UNIT_LOC, (lesser), (greater))
+
+#define AH_UNIT_LT_INT(greater, lesser) \
+    ahi_unit_lt_int(_ahi_usr_test_ctx, AHI_UNIT_LOC, (greater), (lesser))
+
+#define AH_UNIT_NE_MEM(expected, actual, sz) \
+    ahi_unit_ne_mem(_ahi_usr_test_ctx, AHI_UNIT_LOC, (expected), (actual), (sz))
 
 #define AH_UNIT_NE_PTR(unexpected, actual) \
     ahi_unit_ne_ptr(_ahi_usr_test_ctx, AHI_UNIT_LOC, (unexpected), (actual))

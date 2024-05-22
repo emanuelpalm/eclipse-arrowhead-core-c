@@ -2,12 +2,14 @@
 
 #include <ah/err.h>
 #include <ah/unit.h>
+#include <assert.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+static void ahi_format_mem(void* src, size_t src_sz, char* dst, size_t dst_sz);
 static void ahi_report_err(ahi_unit_t* u, ahi_unit_loc_t l, const char* fmt, ...);
 
 void ahi_unit_init(ahi_unit_t* u, int argc, const char** argv)
@@ -49,8 +51,8 @@ void ahi_unit_exit(ahi_unit_t* u)
     }
 
     if (u->_suite_fail_count != 0u) {
-        fprintf(stderr, "Failed %d suites and %d tests.\n",
-            u->_suite_fail_count, u->_test_fail_count);
+        fprintf(stderr, "Failed %d suites and %d tests.\n", u->_suite_fail_count,
+            u->_test_fail_count);
     }
 
     exit(u->_suite_fail_count == 0u ? EXIT_SUCCESS : EXIT_FAILURE);
@@ -152,6 +154,24 @@ bool ahi_unit_eq_int(ahi_unit_t* u, ahi_unit_loc_t l, intmax_t a, intmax_t b)
     return false;
 }
 
+bool ahi_unit_eq_mem(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b, size_t sz)
+{
+    if (memcmp(a, b, sz) == 0) {
+        return true;
+    }
+
+    char buf_a[128u];
+    ahi_format_mem(a, sz, buf_a, sizeof(buf_a));
+
+    char buf_b[128u];
+    ahi_format_mem(b, sz, buf_b, sizeof(buf_b));
+
+    const char* fmt = "Expected: %s\n\t\tReceived: %s\n\n";
+    ahi_report_err(u, l, fmt, buf_a, buf_b);
+
+    return false;
+}
+
 bool ahi_unit_eq_ptr(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b)
 {
     if (a == b) {
@@ -224,6 +244,18 @@ bool ahi_unit_ge_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
     return false;
 }
 
+bool ahi_unit_gt_int(ahi_unit_t* u, ahi_unit_loc_t l, intmax_t a, intmax_t b)
+{
+    if (a > b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIiMAX " > %" PRIiMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
 bool ahi_unit_gt_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
 {
     if (a > b) {
@@ -232,6 +264,33 @@ bool ahi_unit_gt_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
 
     const char* fmt = "Expected: %" PRIxMAX " > %" PRIxMAX "\n\n";
     ahi_report_err(u, l, fmt, b, a);
+
+    return false;
+}
+
+bool ahi_unit_lt_int(ahi_unit_t* u, ahi_unit_loc_t l, intmax_t a, intmax_t b)
+{
+    if (a < b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIiMAX " < %" PRIiMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+bool ahi_unit_ne_mem(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b, size_t sz)
+{
+    if (memcmp(a, b, sz) != 0) {
+        return true;
+    }
+
+    char buf[256u];
+    ahi_format_mem(a, sz, buf, sizeof(buf));
+
+    const char* fmt = "Unexpected: %s\n\n";
+    ahi_report_err(u, l, fmt, buf);
 
     return false;
 }
@@ -299,6 +358,35 @@ void ahi_unit_skip(ahi_unit_t* u, ahi_unit_loc_t l, const char* fmt, ...)
         if (u->_test_state == AHI_STATE_STOPPED) {
             u->_suite_skip_count += 1u;
         }
+    }
+}
+
+static void ahi_format_mem(void* src, size_t src_sz, char* dst, size_t dst_sz)
+{
+    assert(dst_sz > 0u);
+
+    static const char* DIGITS = "0123456789ABCDEF";
+
+    size_t dst_i = 0u;
+    for (size_t src_i = 0u; src_i < src_sz; src_i++) {
+        const char d0 = DIGITS[(((uint8_t*) src)[src_i] >> 0u) & 0xF];
+        if (dst_i >= dst_sz) {
+            break;
+        }
+        dst[dst_i++] = d0;
+
+        const char d1 = DIGITS[(((uint8_t*) src)[src_i] >> 4u) & 0xF];
+        if (dst_i >= dst_sz) {
+            break;
+        }
+        dst[dst_i++] = d1;
+    }
+
+    if (dst_i < dst_sz) {
+        dst[dst_i] = '\0';
+    }
+    else {
+        dst[dst_sz - 1u] = '\0';
     }
 }
 

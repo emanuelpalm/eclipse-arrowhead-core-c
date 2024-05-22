@@ -56,13 +56,17 @@ bool ahi_unit_run_case(ahi_unit_t* u, const char* fmt, ...);
 bool ahi_unit_eq_bool(ahi_unit_t* u, ahi_unit_loc_t l, bool a, bool b);
 bool ahi_unit_eq_err(ahi_unit_t* u, ahi_unit_loc_t l, ah_err_t a, ah_err_t b);
 bool ahi_unit_eq_int(ahi_unit_t* u, ahi_unit_loc_t l, intmax_t a, intmax_t b);
+bool ahi_unit_eq_mem(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b, size_t sz);
 bool ahi_unit_eq_ptr(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b);
 bool ahi_unit_eq_str(ahi_unit_t* u, ahi_unit_loc_t l, const char* a, const char* b);
 bool ahi_unit_eq_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
 bool ahi_unit_eq_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
 bool ahi_unit_ge_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
 bool ahi_unit_ge_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
+bool ahi_unit_gt_int(ahi_unit_t* u, ahi_unit_loc_t l, intmax_t a, intmax_t b);
 bool ahi_unit_gt_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
+bool ahi_unit_lt_int(ahi_unit_t* u, ahi_unit_loc_t l, intmax_t a, intmax_t b);
+bool ahi_unit_ne_mem(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b, size_t sz);
 bool ahi_unit_ne_ptr(ahi_unit_t* u, ahi_unit_loc_t l, void* a, void* b);
 bool ahi_unit_ne_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b);
 
