@@ -22,6 +22,22 @@
 #include <string.h>
 
 /**
+ * The latest representable time.
+ *
+ * Expands to an initializer or value that can be used to initialize an
+ * ah_time_t variable to the latest value it can represent.
+ */
+#define AH_TIME_MAX AHP_TIME_MAX
+
+/**
+ * The earliest representable time.
+ *
+ * Expands to an initializer or value that can be used to initialize an
+ * ah_time_t variable to the earliest value it can represent.
+ */
+#define AH_TIME_MIN AHP_TIME_MIN
+
+/**
  * The zero time.
  *
  * Expands to an initializer or value that can be used to initialize an

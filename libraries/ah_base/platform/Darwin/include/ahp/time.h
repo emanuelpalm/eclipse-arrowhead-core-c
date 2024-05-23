@@ -10,6 +10,8 @@
 #include <stddef.h>
 #include <sys/errno.h>
 
+#define AHP_TIME_MAX  UINT64_MAX
+#define AHP_TIME_MIN  INT64_C(0)
 #define AHP_TIME_ZERO INT64_C(0)
 
 ahp_inline uint64_t ahp_time_now(void)

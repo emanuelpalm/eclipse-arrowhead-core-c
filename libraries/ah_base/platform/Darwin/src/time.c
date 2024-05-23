@@ -70,6 +70,10 @@ ahp_err_t ahp_time_sub(uint64_t t, int64_t ns, uint64_t* res)
 
 ahp_err_t ahp_time_to_epoch_ms(uint64_t t, uint64_t* res)
 {
+    if (res == NULL) {
+        return AHP_EINVAL;
+    }
+
     mach_timebase_info_data_t info = ahi_get_timebase_info();
 
     uint64_t epoch_base_ms;
