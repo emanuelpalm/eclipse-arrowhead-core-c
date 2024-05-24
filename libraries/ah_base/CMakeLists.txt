@@ -14,6 +14,7 @@ set(
     include/ah/time.h
     internal/ahi/alloc.h
     internal/ahi/bit.h
+    internal/ahi/build.gen
     internal/ahi/build.gen.in
     internal/ahi/ckdint.h
     internal/ahi/def.h
