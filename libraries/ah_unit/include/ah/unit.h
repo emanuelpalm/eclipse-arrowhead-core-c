@@ -58,8 +58,14 @@
 #define AH_UNIT_GT_UHEX(lesser, greater) \
     ahi_unit_gt_uhex(_ahi_usr_test_ctx, AHI_UNIT_LOC, (lesser), (greater))
 
+#define AH_UNIT_GT_UINT(lesser, greater) \
+    ahi_unit_gt_uint(_ahi_usr_test_ctx, AHI_UNIT_LOC, (lesser), (greater))
+
 #define AH_UNIT_LT_INT(greater, lesser) \
     ahi_unit_lt_int(_ahi_usr_test_ctx, AHI_UNIT_LOC, (greater), (lesser))
+
+#define AH_UNIT_LT_UINT(lesser, greater) \
+    ahi_unit_lt_uint(_ahi_usr_test_ctx, AHI_UNIT_LOC, (lesser), (greater))
 
 #define AH_UNIT_NE_MEM(expected, actual, sz) \
     ahi_unit_ne_mem(_ahi_usr_test_ctx, AHI_UNIT_LOC, (expected), (actual), (sz))

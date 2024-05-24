@@ -227,7 +227,7 @@ bool ahi_unit_ge_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
     }
 
     const char* fmt = "Expected: %" PRIxMAX " >= %" PRIxMAX "\n\n";
-    ahi_report_err(u, l, fmt, a, a);
+    ahi_report_err(u, l, fmt, a, b);
 
     return false;
 }
@@ -239,7 +239,7 @@ bool ahi_unit_ge_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
     }
 
     const char* fmt = "Expected: %" PRIuMAX " >= %" PRIuMAX "\n\n";
-    ahi_report_err(u, l, fmt, a, a);
+    ahi_report_err(u, l, fmt, a, b);
 
     return false;
 }
@@ -263,7 +263,19 @@ bool ahi_unit_gt_uhex(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
     }
 
     const char* fmt = "Expected: %" PRIxMAX " > %" PRIxMAX "\n\n";
-    ahi_report_err(u, l, fmt, b, a);
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+bool ahi_unit_gt_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
+{
+    if (a > b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIuMAX " > %" PRIuMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, b);
 
     return false;
 }
@@ -275,6 +287,18 @@ bool ahi_unit_lt_int(ahi_unit_t* u, ahi_unit_loc_t l, intmax_t a, intmax_t b)
     }
 
     const char* fmt = "Expected: %" PRIiMAX " < %" PRIiMAX "\n\n";
+    ahi_report_err(u, l, fmt, a, b);
+
+    return false;
+}
+
+bool ahi_unit_lt_uint(ahi_unit_t* u, ahi_unit_loc_t l, uintmax_t a, uintmax_t b)
+{
+    if (a < b) {
+        return true;
+    }
+
+    const char* fmt = "Expected: %" PRIuMAX " < %" PRIuMAX "\n\n";
     ahi_report_err(u, l, fmt, a, b);
 
     return false;

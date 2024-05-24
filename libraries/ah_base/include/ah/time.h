@@ -223,9 +223,9 @@ ah_inline ah_err_t ah_time_to_epoch_ms(ah_time_t t, uint64_t* res)
  * @retval AH_ECLOCKUNSET if no platform wall time is available and
  *                        @c ah_epoch_set_ms() has not yet been called.
  */
-ah_inline ah_err_t ah_epoch_get_ms(uint64_t* res)
+ah_inline ah_err_t ah_epoch_now_ms(uint64_t* res)
 {
-    return ahp_epoch_get_ms(res);
+    return ahp_epoch_now_ms(res);
 }
 
 /**
@@ -233,7 +233,7 @@ ah_inline ah_err_t ah_epoch_get_ms(uint64_t* res)
  * since the Unix Epoch, which started at 1970-01-01 00:00:00 UTC.
  *
  * The function updates the internal clock used by both @c ah_time_to_epoch_ms()
- * and @c ah_epoch_get_ms(). It does not alter the platform wall time, if
+ * and @c ah_epoch_now_ms(). It does not alter the platform wall time, if
  * one is available.
  *
  * @param epoch_ms The number of milliseconds since the Unix Epoch.
@@ -247,6 +247,20 @@ ah_inline ah_err_t ah_epoch_get_ms(uint64_t* res)
 ah_inline ah_err_t ah_epoch_set_ms(uint64_t epoch_ms)
 {
     return ahp_epoch_set_ms(epoch_ms);
+}
+
+/**
+ * Resets the internal clock to its original value.
+ *
+ * On platforms where a wall time is available, calling this function makes the
+ * clock revert to using this wall time. On platforms where no wall time is
+ * available, this function makes the clock return to being unset. In other
+ * words, calling this function undoes the effect of all previous calls to
+ * @c ah_epoch_set_ms().
+ */
+ah_inline void ah_epoch_reset(void)
+{
+    ahp_epoch_reset();
 }
 
 #endif

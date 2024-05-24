@@ -95,7 +95,7 @@ ahp_err_t ahp_time_to_epoch_ms(uint64_t t, uint64_t* res)
     return AHP_OK;
 }
 
-ahp_err_t ahp_epoch_get_ms(uint64_t* res)
+ahp_err_t ahp_epoch_now_ms(uint64_t* res)
 {
     return ahp_time_to_epoch_ms(ahp_time_now(), res);
 }
@@ -105,7 +105,7 @@ __attribute((cold)) ahp_err_t ahp_epoch_set_ms(uint64_t epoch_ms)
     uint64_t at = mach_absolute_time();
 
     mach_timebase_info_data_t info = ahi_get_timebase_info();
-    uint64_t at_ms = ahi_mul_div_u64(at, info.denom, info.numer) / 1000000u;
+    uint64_t at_ms = ahi_mul_div_u64(at, info.numer, info.denom) / 1000000u;
 
     uint64_t epoch_base_ms;
     if (__builtin_sub_overflow(epoch_ms, at_ms, &epoch_base_ms)) {
@@ -115,6 +115,11 @@ __attribute((cold)) ahp_err_t ahp_epoch_set_ms(uint64_t epoch_ms)
     __atomic_store_n(&AHI_EPOCH_BASE_MS, epoch_base_ms, __ATOMIC_RELAXED);
 
     return AHP_OK;
+}
+
+__attribute((cold)) void ahp_epoch_reset(void)
+{
+    __atomic_store_n(&AHI_EPOCH_BASE_MS, AHI_EPOCH_BASE_MS_UNSET, __ATOMIC_RELAXED);
 }
 
 static __attribute((cold)) ahp_err_t ahi_get_epoch_base_ms(mach_timebase_info_data_t* info,

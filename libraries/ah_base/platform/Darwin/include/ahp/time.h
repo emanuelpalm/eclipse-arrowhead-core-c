@@ -52,7 +52,8 @@ ahp_inline bool ahp_time_is_zero(uint64_t t)
 
 ahp_err_t ahp_time_to_epoch_ms(uint64_t t, uint64_t* res);
 
-ahp_err_t ahp_epoch_get_ms(uint64_t* res);
+ahp_err_t ahp_epoch_now_ms(uint64_t* res);
 ahp_err_t ahp_epoch_set_ms(uint64_t epoch_ms);
+void ahp_epoch_reset(void);
 
 #endif

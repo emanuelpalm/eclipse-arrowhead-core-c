@@ -200,4 +200,58 @@ AH_UNIT_SUITE(time)
             AH_UNIT_EQ_ERR(AH_EINVAL, ah_time_to_epoch_ms(AH_TIME_ZERO, NULL));
         }
     }
+
+    AH_UNIT_TEST("ah_time_to_epoch_ms() returns non-zero value.")
+    {
+        uint64_t epoch_ms;
+        AH_UNIT_EQ_ERR(AH_OK, ah_time_to_epoch_ms(AH_TIME_ZERO, &epoch_ms));
+        AH_UNIT_NE_UINT(0u, epoch_ms);
+    }
+
+    AH_UNIT_TEST("ah_epoch_now_ms() rejects invalid arguments.")
+    {
+        AH_UNIT_CASE("`res` is NULL.")
+        {
+            AH_UNIT_EQ_ERR(AH_EINVAL, ah_epoch_now_ms(NULL));
+        }
+    }
+
+    AH_UNIT_TEST("ah_epoch_now_ms() returns non-zero value.")
+    {
+        uint64_t epoch_ms;
+        AH_UNIT_EQ_ERR(AH_OK, ah_epoch_now_ms(&epoch_ms));
+        AH_UNIT_NE_UINT(0u, epoch_ms);
+    }
+
+    AH_UNIT_TEST("ah_epoch_set_ms() affects return value of ah_time_to_epoch_ms()")
+    {
+        uint64_t epoch_ms0;
+        AH_UNIT_EQ_ERR(AH_OK, ah_epoch_now_ms(&epoch_ms0));
+        epoch_ms0 += 10000u;
+
+        AH_UNIT_EQ_ERR(AH_OK, ah_epoch_set_ms(epoch_ms0));
+
+        uint64_t epoch_ms1;
+        AH_UNIT_EQ_ERR(AH_OK, ah_time_to_epoch_ms(ah_time_now(), &epoch_ms1));
+        AH_UNIT_GE_UINT(epoch_ms1, epoch_ms0);
+        AH_UNIT_LT_UINT(epoch_ms1 - epoch_ms0, 1000u);
+
+        ah_epoch_reset();
+    }
+
+    AH_UNIT_TEST("ah_epoch_set_ms() affects return value of ah_epoch_now_ms()")
+    {
+        uint64_t epoch_ms0;
+        AH_UNIT_EQ_ERR(AH_OK, ah_epoch_now_ms(&epoch_ms0));
+        epoch_ms0 += 24000u;
+
+        AH_UNIT_EQ_ERR(AH_OK, ah_epoch_set_ms(epoch_ms0));
+
+        uint64_t epoch_ms1;
+        AH_UNIT_EQ_ERR(AH_OK, ah_epoch_now_ms(&epoch_ms1));
+        AH_UNIT_GE_UINT(epoch_ms1, epoch_ms0);
+        AH_UNIT_LT_UINT(epoch_ms1 - epoch_ms0, 1000u);
+
+        ah_epoch_reset();
+    }
 }
