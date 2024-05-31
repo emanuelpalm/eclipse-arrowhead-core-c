@@ -171,6 +171,7 @@ typedef ahp_time_t ah_time_t;
 
 typedef struct ah_bump ah_bump_t;
 typedef struct ah_bufc ah_bufc_t;
+typedef struct ah_loop ah_loop_t;
 typedef struct ah_slab ah_slab_t;
 
 /** @} */

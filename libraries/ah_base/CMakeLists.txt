@@ -11,6 +11,7 @@ set(
     include/ah/ckdint.h
     include/ah/def.h
     include/ah/err.h
+    include/ah/loop.h
     include/ah/time.h
     internal/ahi/alloc.h
     internal/ahi/bit.h
@@ -18,9 +19,11 @@ set(
     internal/ahi/build.gen.in
     internal/ahi/ckdint.h
     internal/ahi/def.h
+    internal/ahi/loop.h
     src/alloc/align.c
     src/alloc/bump.c
     src/alloc/slab.c
+    src/loop.c
 )
 add_library(ah_base STATIC ${AH_BASE_SOURCE_FILES})
 

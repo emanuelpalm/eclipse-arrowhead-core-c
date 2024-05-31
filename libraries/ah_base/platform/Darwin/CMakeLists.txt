@@ -9,6 +9,7 @@ set(
     include/ahp/buf.h
     include/ahp/def.h
     include/ahp/err.h
+    include/ahp/loop.h
     include/ahp/time.h
     src/alloc/page.c
     src/err.c

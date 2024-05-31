@@ -12,6 +12,8 @@
 
 typedef int ahp_err_t;
 typedef struct iovec ahp_buf_t;
+typedef struct ahp_loop ahp_loop_t;
+typedef struct ahp_loop_evt ahp_loop_evt_t;
 typedef uint64_t ahp_time_t;
 
 #endif
