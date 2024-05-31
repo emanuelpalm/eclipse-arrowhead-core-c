@@ -29,4 +29,6 @@
 #define ahi_inline __attribute((unused)) static inline
 #define ahi_unused __attribute((unused))
 
+typedef struct ahi_loop_evt ahi_loop_evt_t;
+
 #endif

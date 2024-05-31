@@ -52,6 +52,9 @@
  *          library.
  */
 
+/**
+ * An event loop.
+ */
 struct ah_loop {
     ah_slab_t _evt_slab;
     ah_time_t _now;
@@ -176,7 +179,7 @@ ah_inline ah_time_t ah_loop_now(const ah_loop_t* l)
 ah_err_t ah_loop_run_until(ah_loop_t* l, ah_time_t* t);
 
 /**
- * Stops @a l, preventing it from processing any further events.
+ * Stops event loop @a l, preventing it from processing any further events.
  *
  * @param[in] l Pointer to event loop.
  *
@@ -184,7 +187,17 @@ ah_err_t ah_loop_run_until(ah_loop_t* l, ah_time_t* t);
  * @retval AH_EINVAL if @a l is @c NULL.
  * @retval AH_ESTATE if @a l is not running.
  */
-ah_err_t ah_loop_stop(ah_loop_t* l);
+ah_inline ah_err_t ah_loop_stop(ah_loop_t* l)
+{
+    if (l == NULL) {
+        return AH_EINVAL;
+    }
+    if (l->_state != AHI_LOOP_STATE_RUNNING) {
+        return AH_ESTATE;
+    }
+    l->_state = AHI_LOOP_STATE_STOPPING;
+    return AH_OK;
+}
 
 /**
  * Terminates @a l, cancelling all of its pending events and releases all of

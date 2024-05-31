@@ -14,6 +14,7 @@ set(
     src/alloc/page.c
     src/err.c
     src/time.c
+    src/loop.c
 )
 
 add_library(ah_base_platform STATIC ${AH_BASE_PLATFORM_SOURCE_FILES})

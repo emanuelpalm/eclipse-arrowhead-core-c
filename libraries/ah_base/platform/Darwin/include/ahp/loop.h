@@ -14,15 +14,12 @@ struct ahp_loop {
 
 struct ahp_loop_evt {
     void (*_cb)(struct ahp_loop_evt*, struct kevent*);
-    void *_subject;
 };
 
-ahp_err_t ahp_loop_init(ahp_loop_t* l);
-ahp_err_t ahp_loop_alloc_evt(ahp_loop_t* l, struct ahp_loop_evt** evt);
-ahp_err_t ahp_loop_alloc_evt_kev(ahp_loop_t* l, struct ahp_loop_evt** evt, struct kevent** kev);
-ahp_err_t ahp_loop_alloc_kev(ahp_loop_t* l, struct kevent** kev);
-void ahp_loop_free_evt(ahp_loop_t* l, struct ahp_loop_evt* evt);
-ahp_err_t ahp_loop_run_until(ahp_loop_t* l, ahp_time_t* t);
-void ahp_loop_term(ahp_loop_t* l);
+ahp_err_t ahp_loop_init(ah_loop_t* l);
+ahp_err_t ahp_loop_alloc_evt_kev(ah_loop_t* l, ahi_loop_evt_t** evt, struct kevent** kev);
+ahp_err_t ahp_loop_alloc_kev(ah_loop_t* l, struct kevent** kev);
+ahp_err_t ahp_loop_run_until(ah_loop_t* l, ah_time_t* t);
+void ahp_loop_term(ah_loop_t* l);
 
 #endif
