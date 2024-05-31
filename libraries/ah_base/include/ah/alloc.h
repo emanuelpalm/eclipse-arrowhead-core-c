@@ -34,10 +34,10 @@ struct ah_bump {
 /**
  * Slab allocator.
  *
- * Maintains a variable number of memory <em>slots</em> that can be
- * individually allocated and freed, each of which has the same size in bytes.
- * These slots are stored in <em>banks</em>, which, in turn, are stored in
- * memory pages allocated via ah_page_alloc().
+ * Maintains a variable number of memory @a slots that can be individually
+ * allocated and freed, each of which has the same size in bytes. These slots
+ * are stored in @a banks, which, in turn, are stored in memory pages allocated
+ * via @c ah_page_alloc().
  */
 struct ah_slab {
     struct ahi_slab_bank* _bank_list;
@@ -276,9 +276,9 @@ ah_inline size_t ah_page_get_size(void)
 /**
  * @name Slab Allocation
  *
- * A slab allocator maintains a variable number of fixed-size <em>slots</em>,
+ * A slab allocator maintains a variable number of fixed-size @a slots,
  * each of which can be allocated and freed very efficiently. Whenever the slab
- * allocator runs out of slots, it allocates a new <em>bank</em> of slots using
+ * allocator runs out of slots, it allocates a new @a bank of slots using
  * the page allocator. Allocated banks are not freed until the slab allocator
  * itself is terminated.
  *
